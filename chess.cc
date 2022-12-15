@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include "posn.h"
 #include "chess.h"
 
 Board::Board()
@@ -50,17 +51,17 @@ std::ostream& operator<<(std::ostream& out, const Board& b)
 }
 
 //true if white, false if black
-// bool Board::isWhite(posn tar) {
-//     char temp = getPos(tar);
-//     if ('A' <= temp <= 'Z'){
-//         return true;
-//     }
-//     else return false;
-// }
+ bool Board::isWhite(posn tar) {
+     char temp = getPos(tar);
+     if ('A' <= temp <= 'Z'){
+         return true;
+     }
+     else return false;
+}
 
-// char Board::getPos(posn tar) {
-//     return chessBoard[tar.row][tar.col];
-// }
+char Board::getPos(posn tar) {
+     return chessBoard[tar.row][tar.col];
+}
 
 //true if successful moved
 // bool Board::movePiece(posn ini, posn des) {

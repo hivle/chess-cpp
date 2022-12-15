@@ -2,10 +2,11 @@
 #define _POSN_H_
 
 class posn {
-    posn(std::string chessPos);
-    bool operator==(const posn &);
-    int col;
-    int row;
+    public:
+        posn(std::string chessPos);
+        bool operator==(const posn &);
+        int col;
+        int row;
 };
 
 #endif
