@@ -1,15 +1,17 @@
 #ifndef _CHESS_H_
 #define _CHESS_H_
+#include "posn.h"
 
 class Board {
     public:
         Board();
         ~Board();
-        friend std::ostream& operator<<(std::ostream& out, const Board& b);
+        friend std::ostream& operator<<(std::ostream&, const Board&);
+        bool movePiece(posn, posn);
     private:
         char** chessBoard;
-        bool isWhite(posn tar);
-        char getPos(posn tar);
+        char* getPos(posn);
+        bool isEnemy(posn, posn);
 };
 
 #endif

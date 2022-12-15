@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <cmath>
 #include "posn.h"
 #include "chess.h"
 
@@ -34,6 +35,11 @@ Board::~Board()
     delete[] chessBoard;
 }
 
+char* Board::getPos(posn tar)
+{
+    return &chessBoard[tar.row][tar.col];
+}
+
 std::ostream& operator<<(std::ostream& out, const Board& b)
 {
     for (int i = 0; i < 8; i++) {
@@ -50,34 +56,25 @@ std::ostream& operator<<(std::ostream& out, const Board& b)
     return out;
 }
 
-//true if white, false if black
- bool Board::isWhite(posn tar) {
-     char temp = getPos(tar);
-     if ('A' <= temp <= 'Z'){
-         return true;
-     }
-     else return false;
-}
-
-char Board::getPos(posn tar) {
-     return chessBoard[tar.row][tar.col];
+ bool Board::isEnemy(posn tar1, posn tar2)
+ {
+    char start = *getPos(tar1);
+    char target = *getPos(tar2);
+    if (start != '0' && target != '0' && abs(start - target) > ('z' - 'a')){
+        return true;
+    }
+    return false;
 }
 
 //true if successful moved
-// bool Board::movePiece(posn ini, posn des) {
-//     char& tar = getPos(ini);
-//     if (tar == ' ' || tar == '_') return false;
-//     posn* allow = allowed(tar);
-//     //remember to delete, use valgrind
-//     for (int i = 0; i < 27; i++) {
-//         if (des == allow[i]) {
-//             getPos(des) = tar;
-//             if ((ini.col - 'a' + '8' - ini.row) % 2 == 0) {
-//                 tar = ' ';
-//             }   
-//             else tar = '_';
-//             return true;
-//         }
-//     }
-//     return false;
-// }
+bool Board::movePiece(posn ini, posn tar)
+{
+    char *iniPos = getPos(ini);
+    char *tarPos = getPos(tar);
+    if (isEnemy(ini,tar) || *tarPos == '0'){
+        *tarPos = *iniPos;
+        *iniPos = '0';
+        return true;
+    }
+    return false;
+}
