@@ -2,12 +2,19 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <stack>
 #include "posn.h"
 #include "chess.h"
 
-Board::Board()
-{   
-    char newBoard[8][8] =
+State::State():
+whiteTurn(true),
+whiteCastle(true),
+blackCastle(true),
+whiteCastleLong(true),
+blackCastleLong(true),
+repeatedMoves(0)
+{
+    pastBoard =
     {
         {'r','n','b','q','k','b','n','r'},
         {'p','p','p','p','p','p','p','p'},
@@ -18,22 +25,15 @@ Board::Board()
         {'P','P','P','P','P','P','P','P'},
         {'R','N','B','Q','K','B','N','R'}
     };
-    chessBoard = new char*[8];
-    for (int i = 0; i < 8; i++) {
-        chessBoard[i] = new char[8];
-        for (int j = 0; j < 8; j++) {
-            chessBoard[i][j] = newBoard[i][j];
-        }
-    }
 }
 
-Board::~Board() 
-{
-    for (int i = 0; i < 8; i++) {
-        delete[] chessBoard[i];
-    }
-    delete[] chessBoard;
+Board::Board()
+{   
+    State state;
+    chessBoard = state.pastBoard;
 }
+
+Board::~Board() {}
 
 char* Board::getPos(posn tar)
 {
@@ -60,11 +60,9 @@ std::ostream& operator<<(std::ostream& out, const Board& b)
  {
     char start = *getPos(tar1);
     char target = *getPos(tar2);
-    if (start != '0' && target != '0' && abs(start - target) > ('z' - 'a')){
-        return true;
-    }
-    return false;
-}
+    return (start != '0' && target != '0' && abs(start - target) > ('z' - 'a')) ? true : false;
+ }
+
 
 //true if successful moved
 bool Board::movePiece(posn ini, posn tar)
@@ -72,9 +70,30 @@ bool Board::movePiece(posn ini, posn tar)
     char *iniPos = getPos(ini);
     char *tarPos = getPos(tar);
     if (isEnemy(ini,tar) || *tarPos == '0'){
+        history.push(state);
         *tarPos = *iniPos;
         *iniPos = '0';
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                state.pastBoard[i][j] = chessBoard[i][j];
+            }
+        }
         return true;
     }
     return false;
 }
+
+bool Board::revert()
+{
+    if (history.empty()) return false;
+    State temp = history.top();
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            chessBoard[i][j] = temp.pastBoard[i][j];
+        }
+    }
+    history.pop();
+    return true;
+}
+
+// incorporate smart pointers
