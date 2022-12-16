@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <stack>
 #include "posn.h"
 #include "chess.h"
 
@@ -12,32 +11,46 @@ whiteCastle(true),
 blackCastle(true),
 whiteCastleLong(true),
 blackCastleLong(true),
-repeatedMoves(0)
+repeatedMoves(0),
+chessBoard({
+    {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
+    {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
+    {'0', '0', '0', '0', '0', '0', '0', '0'},
+    {'0', '0', '0', '0', '0', '0', '0', '0'},
+    {'0', '0', '0', '0', '0', '0', '0', '0'},
+    {'0', '0', '0', '0', '0', '0', '0', '0'},
+    {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
+    {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
+}){}
+
+bool State::operator==(const State & other)
 {
-    pastBoard =
-    {
-        {'r','n','b','q','k','b','n','r'},
-        {'p','p','p','p','p','p','p','p'},
-        {'0','0','0','0','0','0','0','0'},
-        {'0','0','0','0','0','0','0','0'},
-        {'0','0','0','0','0','0','0','0'},
-        {'0','0','0','0','0','0','0','0'},
-        {'P','P','P','P','P','P','P','P'},
-        {'R','N','B','Q','K','B','N','R'}
-    };
+    if (whiteTurn != other.whiteTurn) return false;
+    if (whiteCastle != other.whiteCastle) return false;
+    if (blackCastle != other.blackCastle) return false;
+    if (whiteCastleLong != other.whiteCastleLong) return false;
+    if (blackCastleLong != other.blackCastleLong) return false;
+    if (repeatedMoves != other.repeatedMoves) return false;
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            if (chessBoard[i][j] != other.chessBoard[i][j]) return false;
+        }
+    }
+    return true;
 }
 
 Board::Board()
 {   
     State state;
-    chessBoard = state.pastBoard;
+    draw = false;
+    whiteWin = false;
 }
 
 Board::~Board() {}
 
 char* Board::getPos(posn tar)
 {
-    return &chessBoard[tar.row][tar.col];
+    return &state.chessBoard[tar.row][tar.col];
 }
 
 std::ostream& operator<<(std::ostream& out, const Board& b)
@@ -46,7 +59,7 @@ std::ostream& operator<<(std::ostream& out, const Board& b)
         int row = 8 - i;
         out <<  "   ---------------------------------\n " << row << " | ";
         for (int j = 0; j < 8; j++) {
-            char piece = b.chessBoard[i][j];
+            char piece = b.state.chessBoard[i][j];
             if (piece == '0') piece = ' ';
             out << piece << " | ";
         }
@@ -70,13 +83,11 @@ bool Board::movePiece(posn ini, posn tar)
     char *iniPos = getPos(ini);
     char *tarPos = getPos(tar);
     if (isEnemy(ini,tar) || *tarPos == '0'){
-        history.push(state);
+        history.push_back(state);
         *tarPos = *iniPos;
         *iniPos = '0';
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
-                state.pastBoard[i][j] = chessBoard[i][j];
-            }
+        if (std::count(history.begin(), history.end(), state) >= 3){
+            draw = true;
         }
         return true;
     }
@@ -86,14 +97,22 @@ bool Board::movePiece(posn ini, posn tar)
 bool Board::revert()
 {
     if (history.empty()) return false;
-    State temp = history.top();
-    for (int i = 0; i < 8; ++i) {
-        for (int j = 0; j < 8; ++j) {
-            chessBoard[i][j] = temp.pastBoard[i][j];
-        }
-    }
-    history.pop();
+    state = history.back();
+    history.pop_back();
     return true;
 }
 
-// incorporate smart pointers
+std::string Board::getDir(posn p, Direction d)
+{
+    int row = p.row;
+    int col = p.col;
+    row += d / 3 - 1;
+    col += d % 3 - 1;
+    if (row < 0 || row > 7 || col < 0 || col > 7) {
+        return "";
+    }
+    p.row = row;
+    p.col = col;
+    return p.name();
+}
+// incorporate smart pointers when possible

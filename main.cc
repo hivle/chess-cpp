@@ -16,5 +16,6 @@ int main() {
     x.revert();
     std::cout<< x <<std::endl;
     x.revert();
+    x.revert();
     std::cout<< x <<std::endl;
 }

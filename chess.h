@@ -3,18 +3,30 @@
 #include "posn.h"
 #include <vector>
 #include <iostream>
-#include <stack>
+
+enum Direction {
+    upleft = 0,
+    up,
+    upright,
+    left,
+    stay,
+    right,
+    downleft,
+    down,
+    downright
+};
 
 class State {
     public:
         State();
+        bool operator==(const State &);
         bool whiteTurn;
         bool whiteCastle;
         bool blackCastle;
         bool whiteCastleLong;
         bool blackCastleLong;
         int repeatedMoves;
-        std::vector<std::vector<char>> pastBoard;
+        std::vector<std::vector<char>> chessBoard;
 };
 
 class Board {
@@ -25,9 +37,11 @@ class Board {
         bool movePiece(posn, posn);
         bool revert();
     private:
+        bool draw;
+        bool whiteWin;
         State state;
-        std::vector<std::vector<char>> chessBoard;
-        std::stack<State> history;
+        std::vector<State> history;
+        std::string getDir(posn, Direction);
         char* getPos(posn);
         bool isEnemy(posn, posn);
 };

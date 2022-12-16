@@ -12,3 +12,12 @@ posn::posn(std::string chessPos){
 bool posn::operator==(const posn &p) {
     return (p.col == col && p.row == row);
 }
+
+std::string posn::name()
+{
+    char let = 'a' + col;
+    std::string chessPos = "";
+    chessPos += let;
+    chessPos += std::to_string(8 - row);
+    return chessPos;
+}
