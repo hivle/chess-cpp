@@ -1,7 +1,7 @@
 #include <string>
 #include <iostream>
+#include <algorithm>
 #include <vector>
-#include <cmath>
 #include "posn.h"
 #include "chess.h"
 
@@ -69,13 +69,41 @@ std::ostream& operator<<(std::ostream& out, const Board& b)
     return out;
 }
 
- bool Board::isEnemy(posn tar1, posn tar2)
- {
-    char start = *getPos(tar1);
-    char target = *getPos(tar2);
-    return (start != '0' && target != '0' && abs(start - target) > ('z' - 'a')) ? true : false;
- }
+bool Board::isWhite(posn tar) 
+{
+    char start = *getPos(tar);
+    char whitePiece[] = {'P','R','N','B','Q','K'};
+    for(char piece : whitePiece){
+        if (piece == start) return true;
+    }
+    return false;
+}
 
+bool Board::isBlack(posn tar)
+{
+    char start = *getPos(tar);
+    char blackPiece[] = {'p','r','n','b','q','k'};
+        for(char piece : blackPiece){
+        if (piece == start) return true;
+    }
+    return false;
+}
+
+bool Board::isEnemy(posn tar1, posn tar2)
+{
+    return ((isWhite(tar1) && isBlack(tar2)) || (isWhite(tar2) && isBlack(tar1)));
+}
+
+void Board::pawnHelper(posn loc, std::vector<posn> free, std::vector<posn> attack){
+    posn u1 = loc.goDir(loc, up);
+    posn u2 = loc.goDir(u1, up);
+    posn ur = loc.goDir(loc, upright);
+    posn ul = loc.goDir(loc, upleft);
+    free.push_back(u1);
+    free.push_back(u2);
+    attack.push_back(ur);
+    attack.push_back(ul);
+}
 
 //true if successful moved
 bool Board::movePiece(posn ini, posn tar)
@@ -102,17 +130,4 @@ bool Board::revert()
     return true;
 }
 
-std::string Board::getDir(posn p, Direction d)
-{
-    int row = p.row;
-    int col = p.col;
-    row += d / 3 - 1;
-    col += d % 3 - 1;
-    if (row < 0 || row > 7 || col < 0 || col > 7) {
-        return "";
-    }
-    p.row = row;
-    p.col = col;
-    return p.name();
-}
 // incorporate smart pointers when possible

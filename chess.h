@@ -4,18 +4,6 @@
 #include <vector>
 #include <iostream>
 
-enum Direction {
-    upleft = 0,
-    up,
-    upright,
-    left,
-    stay,
-    right,
-    downleft,
-    down,
-    downright
-};
-
 class State {
     public:
         State();
@@ -41,9 +29,11 @@ class Board {
         bool whiteWin;
         State state;
         std::vector<State> history;
-        std::string getDir(posn, Direction);
         char* getPos(posn);
+        bool isWhite(posn);
+        bool isBlack(posn);
         bool isEnemy(posn, posn);
-};
+        void pawnHelper(posn, std::vector<posn>, std::vector<posn>);
+    };
 
 #endif
