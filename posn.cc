@@ -1,5 +1,6 @@
 #include <string>
 #include "posn.h"
+#include <iostream>
 
 // assumes valid chess position
 posn::posn(std::string sq){
@@ -12,15 +13,18 @@ bool posn::operator==(const posn &p) {
     return (p.col == col && p.row == row);
 }
 
-posn &posn::operator=(const posn &p)
+posn &posn::operator=(const posn &other)
 {
-    row = p.row;
-    col = p.col;
-    onBoard = p.onBoard;
+    if (this == &other) return *this;
+    col = other.col;
+    row = other.row;
+    onBoard = other.onBoard;
     return *this;
 }
 
-std::string posn::name()
+posn::posn(const posn& other) : col(other.col), row(other.row), onBoard(other.onBoard) {}
+
+std::string posn::name() const
 {   
     if (!onBoard) return "W";
     char let = 'a' + col;
@@ -30,17 +34,19 @@ std::string posn::name()
     return chessPos;
 }
 
-posn posn::goDir(posn p, Direction d)
+posn posn::goDir(Direction d)
 {   
-    int row = p.row;
-    int col = p.col;
-    row += d / 3 - 1;
-    col += d % 3 - 1;
-    posn p2 = p;
-    if (row < 0 || row > 7 || col < 0 || col > 7) {
-        p2.onBoard = false;
+    posn p = *this;
+    p.row += d / 3 - 1;
+    p.col += d % 3 - 1;
+    if (p.row < 0 || p.row > 7 || p.col < 0 || p.col > 7) {
+        p.onBoard = false;
     }
-    p2.row = row;
-    p2.col = col;
-    return p2;
+    return p;
+}
+
+std::ostream& operator<<(std::ostream& out, const posn& p)
+{   
+    out << p.name();
+    return out;
 }

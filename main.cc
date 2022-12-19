@@ -1,5 +1,7 @@
 #include <string>
 #include <iostream>
+#include <algorithm>
+#include <iterator>
 #include "chess.h"
 #include "posn.h"
 
@@ -26,7 +28,7 @@ int main(int argc, char** argv) {
         std::cout << game <<std::endl;
 
         repeat:
-        std::cout << "\rEnter a move (eg:\"e2e4\"): ";
+        std::cout << "Enter a square (eg: \"e2\") to see avaliable moves or enter a move (eg:\"e2e4\"): ";
         std::string m;
         std::cin >> m;
 
@@ -35,6 +37,22 @@ int main(int argc, char** argv) {
         }
         else if (m == "back") {
             game.revert();
+        }
+        else if (m.length() == 2) {
+            std::vector<posn> free;
+            std::vector<posn> attack;
+            game.legalMoves(m, free, attack);
+            if (free.size()) {
+                std::cout << "Free Squares: ";
+                std::copy(free.begin(), free.end() - 1, std::ostream_iterator<posn>(std::cout, ", "));
+                std::cout << free.back() << std::endl;
+            }
+            if (attack.size()){
+                std::cout << "Attack Squares:  ";
+                std::copy(attack.begin(), attack.end() - 1, std::ostream_iterator<posn>(std::cout, ", "));
+                std::cout << attack.back() << std::endl;
+            }
+            goto repeat;
         }
         else if (m.length() != 4){
             std::cout << m << " is not a move" << std::endl;
