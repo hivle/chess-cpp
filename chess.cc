@@ -71,6 +71,10 @@ std::ostream& operator<<(std::ostream& out, const Board& b)
     return out;
 }
 
+bool Board::getTurn() {
+    return state.whiteTurn;
+}
+
 bool Board::isWhite(posn tar) 
 {
     char start = *getPos(tar);
@@ -133,7 +137,7 @@ void Board::lineHelper(posn loc, std::vector<posn> &free, std::vector<posn> &att
     while(d1.onBoard){
         if (freeSquare(d1)) {
             free.push_back(d1);
-            d1 = loc.goDir(dir);
+            d1 = d1.goDir(dir);
         }
         else {
             if(isEnemy(loc, d1)) attack.push_back(d1);
@@ -187,12 +191,14 @@ void Board::kingHelper(posn loc, std::vector<posn> &free, std::vector<posn> &att
         if (i != stay) {
             posn temp = loc.goDir((Direction)i);
             if (isEnemy(loc, temp)) attack.push_back(temp);
-            if (freeSquare(temp)) free.push_back(temp);
+            else if (freeSquare(temp)) free.push_back(temp);
         }
     }
 }
 
 void Board::legalMoves(posn loc, std::vector<posn> &free, std::vector<posn> &attack){
+    if (isWhite(loc) && !state.whiteTurn) return;
+    if (isBlack(loc) && state.whiteTurn) return;
     char name = *getPos(loc);
     switch (name){
         case 'P':
@@ -212,7 +218,7 @@ void Board::legalMoves(posn loc, std::vector<posn> &free, std::vector<posn> &att
 
 //true if successful moved
 bool Board::movePiece(posn ini, posn tar)
-{
+{   
     bool legal = false;
     std::vector<posn> free;
     std::vector<posn> attack;
@@ -230,14 +236,24 @@ bool Board::movePiece(posn ini, posn tar)
         }
     }
     if (legal == false) return false;
+    // clear enpassant mark
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) if (state.chessBoard[i][j] == 'X') state.chessBoard[i][j] = '0';
+    }
     char *iniPos = getPos(ini);
     char *tarPos = getPos(tar);
     history.push_back(state);
 
-    //TODO: add enpassant mark
+    if (ini.row == 6 && *iniPos == 'P' && tar.row == 4){
+        state.chessBoard[5][ini.col] = 'X';
+    }
+    else if (ini.row == 1 && *iniPos == 'p' && tar.row == 3) {
+        state.chessBoard[2][ini.col] = 'X';
+    }
 
     *tarPos = *iniPos;
     *iniPos = '0';
+    state.whiteTurn = !state.whiteTurn;
     // Third time a state repeats the game is drawn
     if (std::count(history.begin(), history.end(), state) >= 3) draw = true;
     return true;
@@ -252,3 +268,4 @@ bool Board::revert()
 }
 
 // incorporate smart pointers when possible
+// todo: castle, pawn promotion, checkmate detection, stop move into checkmate, timer, 50 move rule

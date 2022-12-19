@@ -25,6 +25,7 @@ class Board {
         bool movePiece(posn, posn);
         bool revert();
         void legalMoves(posn, std::vector<posn>&, std::vector<posn>&);
+        bool getTurn();
     private:
         std::vector<char> blackPiece;
         std::vector<char> whitePiece;
