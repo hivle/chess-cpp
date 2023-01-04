@@ -26,6 +26,9 @@ class Board {
         bool revert();
         void legalMoves(posn, std::vector<posn>&, std::vector<posn>&);
         bool getTurn();
+        bool inCheck(bool);
+        posn locateKing(bool);
+
     private:
         std::vector<char> blackPiece;
         std::vector<char> whitePiece;
@@ -33,11 +36,13 @@ class Board {
         bool whiteWin;
         State state;
         std::vector<State> history;
-        char* getPos(posn);
+        char& getPos(posn);
         bool isWhite(posn);
         bool isBlack(posn);
         bool isEnemy(posn, posn);
-        bool freeSquare(posn);
+        bool isEmpty(posn);
+        void dangerSquares(bool, std::vector<posn>&);
+        void possibleMoves(posn, std::vector<posn> &, std::vector<posn> &);
         void lineHelper(posn, std::vector<posn>&, std::vector<posn>&, Direction);
         void pawnHelper(posn, std::vector<posn>&, std::vector<posn>&);
         void rookHelper(posn, std::vector<posn>&, std::vector<posn>&);

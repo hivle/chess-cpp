@@ -28,9 +28,15 @@ int main(int argc, char** argv) {
         std::cout << game <<std::endl;
         repeat:
         if (game.getTurn()) {
+            if (game.inCheck(true)) {
+                std::cout<< "White in Check" << '\n';
+            }
             std::cout<< "White to play" << std::endl;
         }
         else {
+            if (game.inCheck(false)) {
+                std::cout<< "Black in Check" << '\n';
+            }
             std::cout<< "Black to play" << std::endl;
         }
         std::cout << "Enter a square (eg: \"e2\") or enter a move (eg:\"e2e4\"): ";
@@ -57,7 +63,7 @@ int main(int argc, char** argv) {
                     std::cout << free.back() << std::endl;
                 }
                 if (attack.size()){
-                    std::cout << "Attack Squares:  ";
+                    std::cout << "Attack Squares: ";
                     std::copy(attack.begin(), attack.end() - 1, std::ostream_iterator<posn>(std::cout, ", "));
                     std::cout << attack.back() << std::endl;
                 }

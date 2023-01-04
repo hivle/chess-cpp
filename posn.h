@@ -15,6 +15,7 @@ enum Direction {
 
 class posn {
     public:
+        posn();
         posn(std::string chessPos);
         bool operator==(const posn &);
         posn& operator=(const posn&); 

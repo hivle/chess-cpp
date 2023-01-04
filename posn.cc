@@ -2,11 +2,16 @@
 #include "posn.h"
 #include <iostream>
 
-// assumes valid chess position
-posn::posn(std::string sq){
-    row = 8 - (sq[1] - '1' + 1);
-    col = sq[0] - 'a';
-    onBoard = true;
+posn::posn():col(0), row(0), onBoard(true){}
+
+posn::posn(std::string sq):onBoard(true){
+    if (sq.length() == 2 && 'a' <= sq[0] && sq[0] <= 'h' && '1' <= sq[1] && sq[1] <= '8') {
+        row = 8 - (sq[1] - '1' + 1);
+        col = sq[0] - 'a';
+    }
+    else {
+        throw std::invalid_argument("invalid argument, square can only be between \"a1\" and \"h8\"");
+    }
 }
 
 bool posn::operator==(const posn &p) {
