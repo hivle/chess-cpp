@@ -6,3 +6,4 @@ chess.o
 .gitignore
 main.o
 main
+.DS_Store

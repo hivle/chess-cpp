@@ -46,6 +46,7 @@ Board::Board()
     blackPiece = {'p','r','n','b','q','k'};
     draw = false;
     whiteWin = false;
+    blackWin = false;
 }
 
 Board::~Board() {}
@@ -208,17 +209,12 @@ void Board::bishopHelper(posn loc, std::vector<posn> &free, std::vector<posn> &a
 }
 
 void Board::knightHelper(posn loc, std::vector<posn> &free, std::vector<posn> &attack)
-{   
-    std::vector<posn> temp;
-    temp.push_back(loc.goDir(upright).goDir(up));
-    temp.push_back(loc.goDir(upright).goDir(right));
-    temp.push_back(loc.goDir(upleft).goDir(up));
-    temp.push_back(loc.goDir(upleft).goDir(left));
-    temp.push_back(loc.goDir(downright).goDir(down));        
-    temp.push_back(loc.goDir(downright).goDir(right));
-    temp.push_back(loc.goDir(downleft).goDir(down));
-    temp.push_back(loc.goDir(downleft).goDir(left));
-    for (posn i : temp){
+{
+    posn dirs[] = {loc.goDir(upright).goDir(up), loc.goDir(upright).goDir(right), 
+                   loc.goDir(upleft).goDir(up), loc.goDir(upleft).goDir(left), 
+                   loc.goDir(downright).goDir(down), loc.goDir(downright).goDir(right), 
+                   loc.goDir(downleft).goDir(down), loc.goDir(downleft).goDir(left)};             
+    for (posn i : dirs) {
         if (isEnemy(loc, i)) attack.push_back(i);
         if (isEmpty(i)) free.push_back(i);
     }
@@ -242,11 +238,25 @@ void Board::kingHelper(posn loc, std::vector<posn> &free, std::vector<posn> &att
 }
 
 void Board::legalMoves(posn loc, std::vector<posn> &free, std::vector<posn> &attack){
+    if (isEmpty(loc)) return;
     if (isWhite(loc) && !state.whiteTurn) return;
     if (isBlack(loc) && state.whiteTurn) return;
-    possibleMoves(loc, free, attack);
+    std::vector<posn> tempFree;
+    std::vector<posn> tempAttack;
+    possibleMoves(loc, tempFree, tempAttack);
+    for (posn &target : tempFree) {
+        movePiece(loc, target);
+        if (inCheck(!state.whiteTurn)) target.onBoard = false;
+        revert();
+    }
+    for (posn &target : tempAttack) {
+        movePiece(loc, target);
+        if (inCheck(!state.whiteTurn)) target.onBoard = false;
+        revert();
+    }
+    for (posn move : tempFree)   if (move.onBoard) free.push_back(move);
+    for (posn move : tempAttack) if (move.onBoard) attack.push_back(move);
 }
-
 
 //TODO: add const
 void Board::possibleMoves(posn loc, std::vector<posn> &free, std::vector<posn> &attack){
@@ -266,27 +276,10 @@ void Board::possibleMoves(posn loc, std::vector<posn> &free, std::vector<posn> &
     }
 }
 
-//true if successful moved
-bool Board::movePiece(posn ini, posn tar)
+// move no matter if a move is legal
+void Board::movePiece(posn ini, posn tar)
 {   
-    bool legal = false;
-    std::vector<posn> free;
-    std::vector<posn> attack;
-    legalMoves(ini, free, attack);
-    for (posn i: free){
-        if (tar == i){
-            legal = true;
-            break;
-        }
-    }
-    for (posn i: attack){
-        if (tar == i){
-            legal = true;
-            break;
-        }
-    }
-    if (legal == false) return false;
-    // clear enpassant mark
+    // clear enpassant mark at beginning
     for (auto &row : state.chessBoard) {
         for (char &piece : row) if (piece == 'X') piece = '0';
     }
@@ -306,7 +299,44 @@ bool Board::movePiece(posn ini, posn tar)
     state.whiteTurn = !state.whiteTurn;
     // Third time a state repeats the game is drawn
     if (std::count(history.begin(), history.end(), state) >= 3) draw = true;
-    return true;
+}
+
+bool Board::move(posn ini, posn tar) {
+    bool legal = false;
+    std::vector<posn> free;
+    std::vector<posn> attack;
+    legalMoves(ini, free, attack);
+        if (std::find(free.begin(), free.end(), tar) != free.end() ||
+            std::find(attack.begin(), attack.end(), tar) != attack.end())
+        {
+            movePiece(ini, tar);
+            return true;
+        }
+    return false;
+}
+
+
+void Board::updateBoard() {
+    bool legal = false; // boolean to tell whether there exist legal moves
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+            posn temp;
+            temp.row = row;
+            temp.col = col;
+            if (isEmpty(temp)) continue;
+            std::vector<posn> free;
+            std::vector<posn> attack;
+            if (state.whiteTurn ^ isBlack(temp)) legalMoves(temp, free, attack); // ^ is the XOR operator
+            if (free.size() || attack.size()) legal = true; break;
+        }
+    }
+    if (!legal) {
+        if (inCheck(state.whiteTurn)) {
+            whiteWin = !state.whiteTurn;
+            blackWin = state.whiteTurn;
+        }
+        else draw = true;
+    }
 }
 
 bool Board::revert()
@@ -318,4 +348,4 @@ bool Board::revert()
 }
 
 // incorporate smart pointers when possible
-// todo: castle, pawn promotion, checkmate detection, stop move into checkmate, timer, 50 move rule
+// todo: castle, pawn promotion, timer, 50 move rule

@@ -22,18 +22,20 @@ class Board {
         Board();
         ~Board();
         friend std::ostream& operator<<(std::ostream&, const Board&);
-        bool movePiece(posn, posn);
+        bool move(posn, posn);
+        void updateBoard();
         bool revert();
         void legalMoves(posn, std::vector<posn>&, std::vector<posn>&);
         bool getTurn();
         bool inCheck(bool);
         posn locateKing(bool);
+        bool draw;
+        bool whiteWin;
+        bool blackWin;
 
     private:
         std::vector<char> blackPiece;
         std::vector<char> whitePiece;
-        bool draw;
-        bool whiteWin;
         State state;
         std::vector<State> history;
         char& getPos(posn);
@@ -41,9 +43,10 @@ class Board {
         bool isBlack(posn);
         bool isEnemy(posn, posn);
         bool isEmpty(posn);
+        void movePiece(posn, posn);
         void dangerSquares(bool, std::vector<posn>&);
         void possibleMoves(posn, std::vector<posn> &, std::vector<posn> &);
-        void lineHelper(posn, std::vector<posn>&, std::vector<posn>&, Direction);
+        void lineHelper(posn, std::vector<posn> &, std::vector<posn> &, Direction);
         void pawnHelper(posn, std::vector<posn>&, std::vector<posn>&);
         void rookHelper(posn, std::vector<posn>&, std::vector<posn>&);
         void bishopHelper(posn, std::vector<posn>&, std::vector<posn>&);
