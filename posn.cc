@@ -1,50 +1,62 @@
 #include <string>
-#include "posn.h"
 #include <iostream>
+#include <utility>
+#include "posn.h"
 
-posn::posn():col(0), row(0), onBoard(true){}
+posn::posn():pos(0,0), onBoard(true){}
+
+posn::posn(int row, int col): pos(row,col), onBoard(false) {
+    if (row >= 0 && row <= 7 && col >= 0 && col <= 7) onBoard = true;
+}
 
 posn::posn(std::string sq):onBoard(true){
     if (sq.length() == 2 && 'a' <= sq[0] && sq[0] <= 'h' && '1' <= sq[1] && sq[1] <= '8') {
-        row = 8 - (sq[1] - '1' + 1);
-        col = sq[0] - 'a';
+        pos.first = 8 - (sq[1] - '1' + 1);
+        pos.second = sq[0] - 'a';
     }
     else {
         throw std::invalid_argument("invalid argument, square can only be between \"a1\" and \"h8\"");
     }
 }
 
+int posn::getRow(){
+    return pos.first;
+}
+
+int posn::getCol(){
+    return pos.second;
+}
+
 bool posn::operator==(const posn &p) {
-    return (p.col == col && p.row == row);
+    return (p.pos == pos);
 }
 
 posn &posn::operator=(const posn &other)
 {
     if (this == &other) return *this;
-    col = other.col;
-    row = other.row;
+    pos = other.pos;
     onBoard = other.onBoard;
     return *this;
 }
 
-posn::posn(const posn& other) : col(other.col), row(other.row), onBoard(other.onBoard) {}
+posn::posn(const posn& other) : pos(other.pos), onBoard(other.onBoard) {}
 
 std::string posn::name() const
 {   
     if (!onBoard) return "W";
-    char let = 'a' + col;
+    char let = 'a' + pos.second;
     std::string chessPos = "";
     chessPos += let;
-    chessPos += std::to_string(8 - row);
+    chessPos += std::to_string(8 - pos.first);
     return chessPos;
 }
 
 posn posn::goDir(Direction d)
 {   
     posn p = *this;
-    p.row += d / 3 - 1;
-    p.col += d % 3 - 1;
-    if (p.row < 0 || p.row > 7 || p.col < 0 || p.col > 7) {
+    p.pos.first += d / 3 - 1;
+    p.pos.second += d % 3 - 1;
+    if (p.pos.first < 0 || p.pos.first > 7 || p.pos.second < 0 || p.pos.second > 7) {
         p.onBoard = false;
     }
     return p;

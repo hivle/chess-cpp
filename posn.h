@@ -16,15 +16,17 @@ enum Direction {
 class posn {
     public:
         posn();
+        posn(int, int);
         posn(std::string chessPos);
+        int getRow();
+        int getCol();
         bool operator==(const posn &);
         posn& operator=(const posn&); 
         posn(const posn &);
         friend std::ostream& operator<<(std::ostream&, const posn&);
         std::string name() const;
         posn goDir(Direction);
-        int col;
-        int row;
+        std::pair<int,int> pos;
         bool onBoard;
 };
 
