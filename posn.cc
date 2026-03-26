@@ -1,69 +1,51 @@
-#include <string>
-#include <iostream>
-#include <utility>
 #include "posn.h"
+#include <stdexcept>
 
-posn::posn():pos(0,0), onBoard(true){}
+posn::posn() : row(0), col(0), onBoard(true) {}
 
-posn::posn(int row, int col): pos(row,col), onBoard(false) {
+posn::posn(int row, int col) : row(row), col(col), onBoard(false) {
     if (row >= 0 && row <= 7 && col >= 0 && col <= 7) onBoard = true;
 }
 
-posn::posn(std::string sq):onBoard(true){
+posn::posn(const std::string& sq) : onBoard(true) {
     if (sq.length() == 2 && 'a' <= sq[0] && sq[0] <= 'h' && '1' <= sq[1] && sq[1] <= '8') {
-        pos.first = 8 - (sq[1] - '1' + 1);
-        pos.second = sq[0] - 'a';
+        row = 8 - (sq[1] - '0');
+        col = sq[0] - 'a';
+    } else {
+        throw std::invalid_argument("invalid square, must be between \"a1\" and \"h8\"");
     }
-    else {
-        throw std::invalid_argument("invalid argument, square can only be between \"a1\" and \"h8\"");
-    }
 }
 
-int posn::getRow(){
-    return pos.first;
+int posn::getRow() const { return row; }
+int posn::getCol() const { return col; }
+
+bool posn::operator==(const posn& p) const {
+    return row == p.row && col == p.col;
 }
 
-int posn::getCol(){
-    return pos.second;
+bool posn::operator!=(const posn& p) const {
+    return !(*this == p);
 }
 
-bool posn::operator==(const posn &p) {
-    return (p.pos == pos);
+std::string posn::name() const {
+    if (!onBoard) return "??";
+    std::string s;
+    s += static_cast<char>('a' + col);
+    s += std::to_string(8 - row);
+    return s;
 }
 
-posn &posn::operator=(const posn &other)
-{
-    if (this == &other) return *this;
-    pos = other.pos;
-    onBoard = other.onBoard;
-    return *this;
-}
-
-posn::posn(const posn& other) : pos(other.pos), onBoard(other.onBoard) {}
-
-std::string posn::name() const
-{   
-    if (!onBoard) return "W";
-    char let = 'a' + pos.second;
-    std::string chessPos = "";
-    chessPos += let;
-    chessPos += std::to_string(8 - pos.first);
-    return chessPos;
-}
-
-posn posn::goDir(Direction d)
-{   
+posn posn::goDir(Direction d) const {
     posn p = *this;
-    p.pos.first += d / 3 - 1;
-    p.pos.second += d % 3 - 1;
-    if (p.pos.first < 0 || p.pos.first > 7 || p.pos.second < 0 || p.pos.second > 7) {
+    p.row += d / 3 - 1;
+    p.col += d % 3 - 1;
+    if (p.row < 0 || p.row > 7 || p.col < 0 || p.col > 7) {
         p.onBoard = false;
     }
     return p;
 }
 
-std::ostream& operator<<(std::ostream& out, const posn& p)
-{   
+std::ostream& operator<<(std::ostream& out, const posn& p) {
     out << p.name();
     return out;
 }

@@ -1,392 +1,341 @@
-#include <string>
-#include <iostream>
-#include <algorithm>
-#include <vector>
-#include "posn.h"
 #include "chess.h"
+#include <algorithm>
+#include <cctype>
 
-State::State():
-whiteTurn(true),
-whiteCastle(true),
-blackCastle(true),
-whiteCastleLong(true),
-blackCastleLong(true),
-repeatedMoves(0),
-chessBoard({
-    {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
-    {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
-    {'0', '0', '0', '0', '0', '0', '0', '0'},
-    {'0', '0', '0', '0', '0', '0', '0', '0'},
-    {'0', '0', '0', '0', '0', '0', '0', '0'},
-    {'0', '0', '0', '0', '0', '0', '0', '0'},
-    {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
-    {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
-}){}
+// --- State ---
 
-bool State::operator==(const State & other)
-{
-    if (whiteTurn != other.whiteTurn) return false;
-    if (whiteCastle != other.whiteCastle) return false;
-    if (blackCastle != other.blackCastle) return false;
-    if (whiteCastleLong != other.whiteCastleLong) return false;
-    if (blackCastleLong != other.blackCastleLong) return false;
-    if (repeatedMoves != other.repeatedMoves) return false;
-    if (chessBoard != other.chessBoard) return false;
-    return true;
+State::State()
+    : whiteTurn(true)
+    , whiteCastle(true), blackCastle(true)
+    , whiteCastleLong(true), blackCastleLong(true)
+    , repeatedMoves(0)
+    , board({{
+        {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
+        {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
+        {'0', '0', '0', '0', '0', '0', '0', '0'},
+        {'0', '0', '0', '0', '0', '0', '0', '0'},
+        {'0', '0', '0', '0', '0', '0', '0', '0'},
+        {'0', '0', '0', '0', '0', '0', '0', '0'},
+        {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
+        {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
+    }}) {}
+
+bool State::operator==(const State& other) const {
+    return whiteTurn == other.whiteTurn
+        && whiteCastle == other.whiteCastle
+        && blackCastle == other.blackCastle
+        && whiteCastleLong == other.whiteCastleLong
+        && blackCastleLong == other.blackCastleLong
+        && board == other.board;
 }
 
-Board::Board()
-{
-    whitePiece = {'P','R','N','B','Q','K'};
-    blackPiece = {'p','r','n','b','q','k'};
-    draw = false;
-    whiteWin = false;
-    blackWin = false;
+// --- Board ---
+
+Board::Board() : gameResult(GameResult::InProgress) {}
+
+bool Board::getTurn() const { return state.whiteTurn; }
+
+char Board::pieceAt(int row, int col) const {
+    char c = state.board[row][col];
+    return (c == '0' || c == 'X') ? ' ' : c;
 }
 
-Board::~Board() {}
+GameResult Board::result() const { return gameResult; }
 
-char& Board::getPos(posn tar)
-{
-    return state.chessBoard[tar.getRow()][tar.getCol()];
+char& Board::getPos(posn p) { return state.board[p.getRow()][p.getCol()]; }
+char Board::getPos(posn p) const { return state.board[p.getRow()][p.getCol()]; }
+
+bool Board::isWhite(posn p) const {
+    char c = getPos(p);
+    return std::isupper(static_cast<unsigned char>(c));
 }
 
-std::ostream& operator<<(std::ostream& out, const Board& b)
-{
-    for (int i = 0; i < 8; i++) {
-        int row = 8 - i;
-        out <<  "   ---------------------------------\n " << row << " | ";
-        for (int j = 0; j < 8; j++) {
-            char piece = b.state.chessBoard[i][j];
-            if (piece == '0' || piece == 'X') piece = ' ';
-            out << piece << " | ";
-        }
-        out << '\n';
-    }
-    out << "   ---------------------------------\n     a   b   c   d   e   f   g   h\n";
-    return out;
+bool Board::isBlack(posn p) const {
+    char c = getPos(p);
+    return std::islower(static_cast<unsigned char>(c));
 }
 
-bool Board::getTurn() {
-    return state.whiteTurn;
+bool Board::isEnemy(posn a, posn b) const {
+    if (!a.onBoard || !b.onBoard) return false;
+    char ca = getPos(a), cb = getPos(b);
+    // en passant marker counts as enemy for pawns
+    if (((ca == 'p' || ca == 'P') && cb == 'X') ||
+        ((cb == 'p' || cb == 'P') && ca == 'X'))
+        return true;
+    return (isWhite(a) && isBlack(b)) || (isWhite(b) && isBlack(a));
 }
 
-bool Board::inCheck(bool white) {
+bool Board::isEmpty(const std::string& s) const { return isEmpty(posn(s)); }
+
+bool Board::isEmpty(posn p) const {
+    if (!p.onBoard) return false;
+    char c = getPos(p);
+    return c == '0' || c == 'X';
+}
+
+posn Board::locateKing(bool white) const {
+    char target = white ? 'K' : 'k';
+    for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
+            if (state.board[i][j] == target)
+                return posn(i, j);
+    return posn(0, 0); // unreachable in a valid game
+}
+
+bool Board::inCheck(bool white) const {
     posn king = locateKing(white);
     std::vector<posn> danger;
     dangerSquares(white, danger);
-    return ((std::find(danger.begin(), danger.end(), king) != danger.end())? true : false);
+    return std::find(danger.begin(), danger.end(), king) != danger.end();
 }
 
-void Board::dangerSquares(bool white, std::vector<posn> &danger)
-{
-    for (int row = 0; row < 8; row++) {
-        for (int col = 0; col < 8; col++) {
-            posn temp(row,col);
-            if (isEmpty(temp)) continue;
-            // true when 'temp' contians an opposite colour to the boolean 'white'
-            else if (isBlack(temp) == white) {
-                std::vector<posn> free;
-                std::vector<posn> attack;
-                possibleMoves(temp, free, attack, false);
-                for (posn moves : attack) {
-                    if (std::find(danger.begin(), danger.end(), moves) == danger.end()) {
-                        danger.push_back(moves);
-                    }
+void Board::dangerSquares(bool white, std::vector<posn>& danger) const {
+    for (int r = 0; r < 8; r++) {
+        for (int c = 0; c < 8; c++) {
+            posn p(r, c);
+            if (isEmpty(p)) continue;
+            if (isBlack(p) == white) {
+                std::vector<posn> free, attack;
+                possibleMoves(p, free, attack, false);
+                for (const posn& m : attack) {
+                    if (std::find(danger.begin(), danger.end(), m) == danger.end())
+                        danger.push_back(m);
                 }
             }
         }
     }
 }
 
-bool Board::isWhite(posn tar) 
-{
-    char start = getPos(tar);
-    for(char piece : whitePiece){
-        if (piece == start) return true;
-    }
-    return false;
+bool Board::isDanger(bool white, posn loc) const {
+    std::vector<posn> danger;
+    dangerSquares(white, danger);
+    return std::find(danger.begin(), danger.end(), loc) != danger.end();
 }
 
-bool Board::isBlack(posn tar)
-{
-    char start = getPos(tar);
-    for(char piece : blackPiece){
-        if (piece == start) return true;
-    }
-    return false;
-}
+// --- Move Helpers ---
 
-bool Board::isEnemy(posn tar1, posn tar2)
-{   
-    if (!tar1.onBoard || !tar2.onBoard) return false;
-    char n1 = getPos(tar1);
-    char n2 = getPos(tar2);
-    if (((n1 == 'p' || n1 == 'P') && (n2 == 'X')) || ((n2 == 'p' || n2 == 'P') && (n1 == 'X'))) {
-        return true;
-    }
-    return ((isWhite(tar1) && isBlack(tar2)) || (isWhite(tar2) && isBlack(tar1)));
-}
-
-bool Board::isEmpty(std::string tar) {
-    return isEmpty(posn(tar));
-}
-
-bool Board::isEmpty(posn tar) 
-{   
-    if (!tar.onBoard) return false;
-    char temp = getPos(tar);
-    return (temp == '0' || temp == 'X');
-}
-
-// assumes both Kings are always on the board
-posn Board::locateKing(bool white)
-{
-    for (int i = 0; i < 8; i++){
-        for (int j = 0; j < 8; j++){
-            if (state.chessBoard[i][j] == (white? 'K':'k')){
-                return posn(i,j);
-            }
-        }
-    }
-    return posn(0,0); // unreachable in a valid game
-}
-
-// free and attack must be empty, helper only gives legal moves without considering check
-void Board::pawnHelper(posn loc, std::vector<posn> &free, std::vector<posn> &attack)
-{   
+void Board::pawnHelper(posn loc, std::vector<posn>& free, std::vector<posn>& attack) const {
     bool white = isWhite(loc);
-    // pawn can only move forward, if a pawn on it's original row it means it hasn't moved
-    bool pawnNotMoved = (white && loc.getRow() == 6) || (!white && loc.getRow() == 1);
+    bool unmoved = (white && loc.getRow() == 6) || (!white && loc.getRow() == 1);
     posn u1 = white ? loc.goDir(up) : loc.goDir(down);
     posn u2 = white ? u1.goDir(up) : u1.goDir(down);
     posn ur = white ? loc.goDir(upright) : loc.goDir(downleft);
     posn ul = white ? loc.goDir(upleft) : loc.goDir(downright);
+
     if (u1.onBoard && isEmpty(u1)) {
         free.push_back(u1);
-        if (pawnNotMoved && isEmpty(u2)) free.push_back(u2);
+        if (unmoved && isEmpty(u2)) free.push_back(u2);
     }
     if (ur.onBoard) attack.push_back(ur);
     if (ul.onBoard) attack.push_back(ul);
 }
 
-void Board::lineHelper(posn loc, std::vector<posn> &attack, Direction dir){
-    posn d1 = loc.goDir(dir);
-    while(d1.onBoard){
-        if (isEmpty(d1)) {
-            attack.push_back(d1);
-            d1 = d1.goDir(dir);
-        }
-        else {
-            if(isEnemy(loc, d1)) attack.push_back(d1);
+void Board::lineHelper(posn loc, std::vector<posn>& attack, Direction dir) const {
+    posn d = loc.goDir(dir);
+    while (d.onBoard) {
+        if (isEmpty(d)) {
+            attack.push_back(d);
+            d = d.goDir(dir);
+        } else {
+            if (isEnemy(loc, d)) attack.push_back(d);
             break;
-        } 
+        }
     }
 }
 
-void Board::rookHelper(posn loc, std::vector<posn> &attack)
-{   
+void Board::rookHelper(posn loc, std::vector<posn>& attack) const {
     lineHelper(loc, attack, up);
     lineHelper(loc, attack, down);
     lineHelper(loc, attack, left);
     lineHelper(loc, attack, right);
 }
 
-void Board::bishopHelper(posn loc, std::vector<posn> &attack)
-{   
+void Board::bishopHelper(posn loc, std::vector<posn>& attack) const {
     lineHelper(loc, attack, upright);
     lineHelper(loc, attack, upleft);
     lineHelper(loc, attack, downright);
     lineHelper(loc, attack, downleft);
 }
 
-void Board::knightHelper(posn loc, std::vector<posn> &attack)
-{
-    posn dirs[] = {loc.goDir(upright).goDir(up), loc.goDir(upright).goDir(right), 
-                   loc.goDir(upleft).goDir(up), loc.goDir(upleft).goDir(left), 
-                   loc.goDir(downright).goDir(down), loc.goDir(downright).goDir(right), 
-                   loc.goDir(downleft).goDir(down), loc.goDir(downleft).goDir(left)};             
-    for (posn i : dirs) {
-        if (isEnemy(loc, i)) attack.push_back(i);
-        if (isEmpty(i)) attack.push_back(i);
+void Board::knightHelper(posn loc, std::vector<posn>& attack) const {
+    posn dirs[] = {
+        loc.goDir(upright).goDir(up),    loc.goDir(upright).goDir(right),
+        loc.goDir(upleft).goDir(up),     loc.goDir(upleft).goDir(left),
+        loc.goDir(downright).goDir(down), loc.goDir(downright).goDir(right),
+        loc.goDir(downleft).goDir(down),  loc.goDir(downleft).goDir(left)
+    };
+    for (const posn& d : dirs) {
+        if (d.onBoard && (isEmpty(d) || isEnemy(loc, d)))
+            attack.push_back(d);
     }
 }
 
-void Board::queenHelper(posn loc, std::vector<posn> &attack)
-{   
+void Board::queenHelper(posn loc, std::vector<posn>& attack) const {
     bishopHelper(loc, attack);
     rookHelper(loc, attack);
 }
 
-bool Board::isDanger(bool white, posn loc) {
-    std::vector<posn> danger;
-    dangerSquares(white, danger);
-    return (std::find(danger.begin(), danger.end(), loc) != danger.end());
-}
-
-void Board::kingHelper(posn loc, std::vector<posn> &free, std::vector<posn> &attack, bool c)
-{   
-    for (int i = upleft; i < downright; i++){
-        if (i != stay) {
-            posn temp = loc.goDir((Direction)i);
-            if (isEnemy(loc, temp)) attack.push_back(temp);
-            else if (isEmpty(temp)) attack.push_back(temp);
-        }
+void Board::kingHelper(posn loc, std::vector<posn>& free, std::vector<posn>& attack, bool castling) const {
+    for (int i = upleft; i <= downright; i++) {
+        if (i == stay) continue;
+        posn temp = loc.goDir(static_cast<Direction>(i));
+        if (!temp.onBoard) continue;
+        if (isEnemy(loc, temp)) attack.push_back(temp);
+        else if (isEmpty(temp)) attack.push_back(temp);
     }
-    if (c) {
-        if (state.whiteTurn){
-            if (state.whiteCastle) {
-                if (isEmpty("f1") && isEmpty("g1")) {
-                    if (!isDanger(state.whiteTurn, posn("f1")) && !isDanger(state.whiteTurn, posn("g1"))) {
-                        free.push_back(posn("g1"));
-                    }
-                }
-            }
-            if (state.whiteCastleLong) {
-                if (isEmpty("d1") && isEmpty("c1") && isEmpty("b1")) {
-                    if (!isDanger(state.whiteTurn, posn("c1")) && !isDanger(state.whiteTurn, posn("b1"))) {
-                        free.push_back(posn("c1"));
-                    }
-                }
-            }
+
+    if (!castling) return;
+
+    if (state.whiteTurn) {
+        if (state.whiteCastle && isEmpty("f1") && isEmpty("g1")) {
+            if (!isDanger(true, posn("f1")) && !isDanger(true, posn("g1")))
+                free.push_back(posn("g1"));
         }
-        else {
-            if (state.blackCastle) {
-                if (isEmpty("f8") && isEmpty("g8")) {
-                    if (!isDanger(state.whiteTurn, posn("f8")) && !isDanger(state.whiteTurn, posn("g8"))) {
-                        free.push_back(posn("g8"));
-                    }
-                }
-            }
-            if (state.blackCastleLong) {
-                if (isEmpty("d8") && isEmpty("c8") && isEmpty("b8")) {
-                    if (!isDanger(state.whiteTurn, posn("c8")) && !isDanger(state.whiteTurn, posn("b8"))) {
-                        free.push_back(posn("c8"));
-                    }
-                }
-            }
+        if (state.whiteCastleLong && isEmpty("d1") && isEmpty("c1") && isEmpty("b1")) {
+            if (!isDanger(true, posn("c1")) && !isDanger(true, posn("d1")))
+                free.push_back(posn("c1"));
+        }
+    } else {
+        if (state.blackCastle && isEmpty("f8") && isEmpty("g8")) {
+            if (!isDanger(false, posn("f8")) && !isDanger(false, posn("g8")))
+                free.push_back(posn("g8"));
+        }
+        if (state.blackCastleLong && isEmpty("d8") && isEmpty("c8") && isEmpty("b8")) {
+            if (!isDanger(false, posn("c8")) && !isDanger(false, posn("d8")))
+                free.push_back(posn("c8"));
         }
     }
 }
 
-void Board::legalMoves(posn loc, std::vector<posn> &free, std::vector<posn> &attack){
+void Board::possibleMoves(posn loc, std::vector<posn>& free, std::vector<posn>& attack, bool castling) const {
+    switch (getPos(loc)) {
+        case 'P': case 'p': pawnHelper(loc, free, attack); break;
+        case 'R': case 'r': rookHelper(loc, attack); break;
+        case 'B': case 'b': bishopHelper(loc, attack); break;
+        case 'N': case 'n': knightHelper(loc, attack); break;
+        case 'Q': case 'q': queenHelper(loc, attack); break;
+        case 'K': case 'k': kingHelper(loc, free, attack, castling); break;
+    }
+}
+
+// --- Legal Move Filtering ---
+
+void Board::legalMoves(posn loc, std::vector<posn>& free, std::vector<posn>& attack) const {
     if (isEmpty(loc)) return;
     if (isWhite(loc) && !state.whiteTurn) return;
     if (isBlack(loc) && state.whiteTurn) return;
-    std::vector<posn> tempFree;
-    std::vector<posn> tempAttack;
-    possibleMoves(loc, tempFree, tempAttack, true);
-    for (posn &target : tempFree) {
-        movePiece(loc, target);
-        if (inCheck(!state.whiteTurn)) target.onBoard = false;
-        revert();
+
+    std::vector<posn> tmpFree, tmpAttack;
+    possibleMoves(loc, tmpFree, tmpAttack, true);
+
+    // We need a mutable copy to test moves
+    Board test = *this;
+
+    for (posn& target : tmpFree) {
+        test.state = state;
+        test.movePiece(loc, target);
+        if (test.inCheck(!test.state.whiteTurn)) target.onBoard = false;
+        test.state = state;
     }
-    for (posn &target : tempAttack) {
-        movePiece(loc, target);
-        if (inCheck(!state.whiteTurn)) target.onBoard = false;
-        revert();
-    }
-    for (posn move : tempFree)  if (move.onBoard) free.push_back(move);
-    for (posn move : tempAttack) {
-        if (move.onBoard){
-            if (isEnemy(move,loc)) attack.push_back(move);
-            else if (getPos(loc) != 'p' && getPos(loc) != 'P') free.push_back(move);
-        }
+    for (posn& target : tmpAttack) {
+        test.state = state;
+        test.movePiece(loc, target);
+        if (test.inCheck(!test.state.whiteTurn)) target.onBoard = false;
+        test.state = state;
     }
 
-}
-
-void Board::possibleMoves(posn loc, std::vector<posn> &free, std::vector<posn> &attack, bool c){
-    switch (getPos(loc)){
-        case 'P':
-        case 'p': pawnHelper(loc, free, attack); break;
-        case 'R':
-        case 'r': rookHelper(loc,attack); break;
-        case 'B':
-        case 'b': bishopHelper(loc,attack); break;
-        case 'N':
-        case 'n': knightHelper(loc,attack); break;
-        case 'Q':
-        case 'q': queenHelper(loc,attack); break;
-        case 'K':
-        case 'k': kingHelper(loc,free,attack, c); break;
+    for (const posn& m : tmpFree)
+        if (m.onBoard) free.push_back(m);
+    for (const posn& m : tmpAttack) {
+        if (!m.onBoard) continue;
+        if (isEnemy(m, loc)) attack.push_back(m);
+        else if (getPos(loc) != 'p' && getPos(loc) != 'P') free.push_back(m);
     }
 }
 
-void Board::movePiece(std::string start, std::string end) {
-    movePiece(posn(start), posn(end));
-}
+// --- Move Execution ---
 
-// assumes moves are legal already
-void Board::movePiece(posn ini, posn tar)
-{   
-    auto start = ini.name();
-    auto end = tar.name();
+void Board::movePiece(posn ini, posn tar, char promotion) {
+    std::string start = ini.name();
+    std::string end = tar.name();
+
     state.repeatedMoves++;
-    // clear enpassant mark at beginning
-    for (auto &row : state.chessBoard) {
-        for (char &piece : row) if (piece == 'X') piece = '0';
-    }
+    // Clear en passant markers
+    for (auto& row : state.board)
+        for (char& c : row)
+            if (c == 'X') c = '0';
+
     char& iniPos = getPos(ini);
     char& tarPos = getPos(tar);
-    if (iniPos == 'P' || iniPos == 'p' || isEnemy(ini, tar)) state.repeatedMoves = 0;
+    if (iniPos == 'P' || iniPos == 'p' || isEnemy(ini, tar))
+        state.repeatedMoves = 0;
+
     history.push_back(state);
-    // place enpassant mark
-    if (ini.getRow() == 6 && iniPos == 'P' && tar.getRow() == 4) {
-        state.chessBoard[5][ini.getCol()] = 'X';
-    }
-    else if (ini.getRow() == 1 && iniPos == 'p' && tar.getRow() == 3) {
-        state.chessBoard[2][ini.getCol()] = 'X';
+
+    // Place en passant marker
+    if (ini.getRow() == 6 && iniPos == 'P' && tar.getRow() == 4)
+        state.board[5][ini.getCol()] = 'X';
+    else if (ini.getRow() == 1 && iniPos == 'p' && tar.getRow() == 3)
+        state.board[2][ini.getCol()] = 'X';
+
+    // En passant capture: pawn moves diagonally to empty square
+    if ((iniPos == 'P' || iniPos == 'p') && ini.getCol() != tar.getCol() && tarPos == '0') {
+        state.board[ini.getRow()][tar.getCol()] = '0';
     }
 
-    tarPos = iniPos;
+    char piece = iniPos;
+    tarPos = piece;
     iniPos = '0';
 
-    // Castle
+    // Pawn promotion
+    if (piece == 'P' && tar.getRow() == 0)
+        tarPos = std::toupper(static_cast<unsigned char>(promotion));
+    else if (piece == 'p' && tar.getRow() == 7)
+        tarPos = std::tolower(static_cast<unsigned char>(promotion));
+
+    // Castling rook movement
     if (start == "e1") {
-        if (state.whiteCastle && end == "g1"){
+        if (state.whiteCastle && end == "g1") {
             getPos(posn("h1")) = '0';
-            getPos(posn("f1")) = 'R';          
-        }  
-        if (state.whiteCastleLong &&  end == "c1"){
+            getPos(posn("f1")) = 'R';
+        }
+        if (state.whiteCastleLong && end == "c1") {
             getPos(posn("a1")) = '0';
             getPos(posn("d1")) = 'R';
         }
         state.whiteCastle = false;
         state.whiteCastleLong = false;
-    }
-    else if (start == "e8") {
-        if (state.blackCastle  && end == "g8"){
+    } else if (start == "e8") {
+        if (state.blackCastle && end == "g8") {
             getPos(posn("h8")) = '0';
-            getPos(posn("f8")) = 'R';  
+            getPos(posn("f8")) = 'r';
         }
-        if (state.blackCastleLong &&  end == "c8") {
+        if (state.blackCastleLong && end == "c8") {
             getPos(posn("a8")) = '0';
-            getPos(posn("d8")) = 'R';
+            getPos(posn("d8")) = 'r';
         }
         state.blackCastle = false;
         state.blackCastleLong = false;
     }
+    // Rook moves invalidate castling
     else if (start == "h1") state.whiteCastle = false;
     else if (start == "a1") state.whiteCastleLong = false;
     else if (start == "h8") state.blackCastle = false;
     else if (start == "a8") state.blackCastleLong = false;
 
-    // Fifty move rule
-    if (state.repeatedMoves == 100) draw = true;
-    // Third time a state repeats the game is drawn
-    if (std::count(history.begin(), history.end(), state) >= 3) draw = true;
+    // Fifty-move rule
+    if (state.repeatedMoves >= 100) gameResult = GameResult::Draw;
+    // Threefold repetition
+    if (std::count(history.begin(), history.end(), state) >= 3)
+        gameResult = GameResult::Draw;
 }
 
-bool Board::move(posn ini, posn tar) {
-    std::vector<posn> free;
-    std::vector<posn> attack;
+bool Board::move(posn ini, posn tar, char promotion) {
+    std::vector<posn> free, attack;
     legalMoves(ini, free, attack);
     if (std::find(free.begin(), free.end(), tar) != free.end() ||
-        std::find(attack.begin(), attack.end(), tar) != attack.end())
-    {
-        movePiece(ini, tar);
-        // Switch turns
+        std::find(attack.begin(), attack.end(), tar) != attack.end()) {
+        movePiece(ini, tar, promotion);
         state.whiteTurn = !state.whiteTurn;
         return true;
     }
@@ -394,33 +343,31 @@ bool Board::move(posn ini, posn tar) {
 }
 
 void Board::updateBoard() {
-    bool legal = false; // boolean to tell whether there exist legal moves
-    for (int row = 0; row < 8; row++) {
-        for (int col = 0; col < 8; col++) {
-            posn temp(row,col);
-            if (isEmpty(temp)) continue;
-            std::vector<posn> free;
-            std::vector<posn> attack;
-            if (state.whiteTurn ^ isBlack(temp)) legalMoves(temp, free, attack); // ^ is the XOR operator
-            if (free.size() || attack.size()) { legal = true; break; }
+    bool hasLegalMoves = false;
+    for (int r = 0; r < 8 && !hasLegalMoves; r++) {
+        for (int c = 0; c < 8 && !hasLegalMoves; c++) {
+            posn p(r, c);
+            if (isEmpty(p)) continue;
+            if (state.whiteTurn == isWhite(p)) {
+                std::vector<posn> free, attack;
+                legalMoves(p, free, attack);
+                if (!free.empty() || !attack.empty())
+                    hasLegalMoves = true;
+            }
         }
-        if (legal) break;
     }
-    if (!legal) {
-        if (inCheck(state.whiteTurn)) {
-            whiteWin = !state.whiteTurn;
-            blackWin = state.whiteTurn;
-        }
-        else draw = true;
+    if (!hasLegalMoves) {
+        if (inCheck(state.whiteTurn))
+            gameResult = state.whiteTurn ? GameResult::BlackWins : GameResult::WhiteWins;
+        else
+            gameResult = GameResult::Draw;
     }
 }
 
-bool Board::revert()
-{
+bool Board::revert() {
     if (history.empty()) return false;
     state = history.back();
     history.pop_back();
+    gameResult = GameResult::InProgress;
     return true;
 }
-
-// todo: pawn promotion, timer
