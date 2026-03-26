@@ -6,22 +6,8 @@
 #include "posn.h"
 
 int main(int argc, char** argv) {
-    int whiteTime = 300;
-    int blackTime = 300;
     bool white = true;
     Board game;
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-t") == 0) {
-            if (i + 1 < argc) {
-                whiteTime = atoi(argv[i + 1]);
-                blackTime = whiteTime;
-            } 
-            else {
-                std::cout << "Error: -t option requires an integer argument in seconds." << std::endl;
-                return 1;
-            }
-        }
-    }
     std::cout << "New Game\n";
     while (true) {
         std::cout << game << '\n';

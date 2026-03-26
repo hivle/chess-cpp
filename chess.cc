@@ -36,8 +36,7 @@ bool State::operator==(const State & other)
 }
 
 Board::Board()
-{   
-    State state;
+{
     whitePiece = {'P','R','N','B','Q','K'};
     blackPiece = {'p','r','n','b','q','k'};
     draw = false;
@@ -150,6 +149,7 @@ posn Board::locateKing(bool white)
             }
         }
     }
+    return posn(0,0); // unreachable in a valid game
 }
 
 // free and attack must be empty, helper only gives legal moves without considering check
@@ -259,7 +259,7 @@ void Board::kingHelper(posn loc, std::vector<posn> &free, std::vector<posn> &att
                 }
             }
             if (state.blackCastleLong) {
-                if (isEmpty("d1") && isEmpty("c8") && isEmpty("b8")) {
+                if (isEmpty("d8") && isEmpty("c8") && isEmpty("b8")) {
                     if (!isDanger(state.whiteTurn, posn("c8")) && !isDanger(state.whiteTurn, posn("b8"))) {
                         free.push_back(posn("c8"));
                     }
@@ -379,7 +379,6 @@ void Board::movePiece(posn ini, posn tar)
 }
 
 bool Board::move(posn ini, posn tar) {
-    bool legal = false;
     std::vector<posn> free;
     std::vector<posn> attack;
     legalMoves(ini, free, attack);
@@ -395,7 +394,6 @@ bool Board::move(posn ini, posn tar) {
 }
 
 void Board::updateBoard() {
-    std::cout<< state.whiteCastle << state.whiteCastleLong << state.blackCastle << state.blackCastleLong << std::endl;
     bool legal = false; // boolean to tell whether there exist legal moves
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 8; col++) {
@@ -404,8 +402,9 @@ void Board::updateBoard() {
             std::vector<posn> free;
             std::vector<posn> attack;
             if (state.whiteTurn ^ isBlack(temp)) legalMoves(temp, free, attack); // ^ is the XOR operator
-            if (free.size() || attack.size()) legal = true; break;
+            if (free.size() || attack.size()) { legal = true; break; }
         }
+        if (legal) break;
     }
     if (!legal) {
         if (inCheck(state.whiteTurn)) {
