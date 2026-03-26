@@ -1,27 +1,33 @@
-# Specify the target executable
-TARGET = main
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -O2
 
-# Specify the C++ source files
-SOURCES = chess.cc main.cc posn.cc
-
-# Specify the header files
+CORE_SRC = chess.cc posn.cc
+CORE_OBJ = $(CORE_SRC:.cc=.o)
 HEADERS = chess.h posn.h
 
-# Specify any additional libraries to link with
-LIBS =
+X11_LIBS = -lX11
 
-# Compiler and flags
-CXX = g++
-CXXFLAGS = -std=c++11 -Wall -O2
+# Default: build both CLI and GUI
+all: chess chess-gui
 
-# Build the target by linking the object files
-$(TARGET): $(SOURCES:.cc=.o)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SOURCES:.cc=.o) $(LIBS)
+# CLI version
+chess: $(CORE_OBJ) main.o
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# Compile the source files
+# GUI version (X11)
+chess-gui: $(CORE_OBJ) gui.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(X11_LIBS)
+
+# Build only CLI
+cli: chess
+
+# Build only GUI
+gui: chess-gui
+
 %.o: %.cc $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean up the built files
 clean:
-	rm -f $(TARGET) $(SOURCES:.cc=.o)
+	rm -f chess chess-gui *.o
+
+.PHONY: all cli gui clean

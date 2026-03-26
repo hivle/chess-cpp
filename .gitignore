@@ -1,9 +1,6 @@
-.vscode/tasks.json
-.vscode/settings.json
-posn.o
-.gitignore
-chess.o
-.gitignore
-main.o
+*.o
+chess
+chess-gui
 main
+.vscode/
 .DS_Store
