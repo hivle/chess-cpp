@@ -2,16 +2,32 @@
 
 A chess game written in C++ with a terminal CLI and an X11 graphical interface.
 
+## Dependencies
+
+Install the required packages:
+
+```bash
+# Ubuntu / Debian
+sudo apt-get install -y g++ make libx11-dev
+
+# Fedora / RHEL
+sudo dnf install -y gcc-c++ make libX11-devel
+
+# Arch
+sudo pacman -S gcc make libx11
+
+# macOS (Homebrew) — CLI only, GUI not supported on macOS
+brew install gcc make
+```
+
 ## Build
 
 ```bash
 make        # build both CLI and GUI
-make cli    # CLI only
+make cli    # CLI only (no libX11 needed)
 make gui    # GUI only
 make clean  # remove build artifacts
 ```
-
-Requires `g++` (C++17), `make`, and `libX11-dev` for the GUI.
 
 ## Play
 
