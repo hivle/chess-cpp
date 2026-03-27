@@ -78,7 +78,7 @@ static void printBoard(const Board& game,
         lines++;
 
         // Line 2: blank row (gives square height)
-        std::cout << "    ";
+        std::cout << "   ";
         for (int c = 0; c < 8; c++) {
             bool light    = (r + c) % 2 == 0;
             posn sq(r, c);
