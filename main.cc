@@ -21,16 +21,9 @@ namespace Color {
     const char* Black   = "\033[30m";
 }
 
-static const char* pieceUnicode(char p) {
-    switch (p) {
-        case 'K': return "\u2654"; case 'Q': return "\u2655";
-        case 'R': return "\u2656"; case 'B': return "\u2657";
-        case 'N': return "\u2658"; case 'P': return "\u2659";
-        case 'k': return "\u265A"; case 'q': return "\u265B";
-        case 'r': return "\u265C"; case 'b': return "\u265D";
-        case 'n': return "\u265E"; case 'p': return "\u265F";
-        default:  return " ";
-    }
+static char pieceChar(char p) {
+    if (p == ' ') return ' ';
+    return std::toupper(static_cast<unsigned char>(p));
 }
 
 static void printBoard(const Board& game,
@@ -64,7 +57,7 @@ static void printBoard(const Board& game,
             else
                 std::cout << Color::Black;
 
-            std::cout << " " << pieceUnicode(piece) << " " << Color::Reset;
+            std::cout << " " << pieceChar(piece) << " " << Color::Reset;
         }
         std::cout << "\n";
     }
