@@ -37,45 +37,79 @@ static const char* pieceSymbol(char p) {
     }
 }
 
+// Move cursor to top-left of board area and redraw in place
+static int boardLines = 0; // track how many lines the board takes
+
+static std::string squareBg(bool light, bool sel, bool isFree, bool isAttack) {
+    if (sel)      return "\033[48;5;214m";
+    if (isAttack) return "\033[48;5;167m";
+    if (isFree)   return "\033[48;5;114m";
+    return light  ? "\033[48;5;223m" : "\033[48;5;137m";
+}
+
 static void printBoard(const Board& game,
                         const std::vector<posn>& highlightFree = {},
                         const std::vector<posn>& highlightAttack = {},
                         posn selected = posn(-1, -1)) {
-    std::cout << "\n";
+    // Move cursor up to overwrite previous board
+    if (boardLines > 0)
+        std::cout << "\033[" << boardLines << "A\033[J";
+
+    int lines = 0;
     for (int r = 0; r < 8; r++) {
+        // Top half of each square (blank row for height)
+        std::cout << "    ";
+        for (int c = 0; c < 8; c++) {
+            bool light = (r + c) % 2 == 0;
+            posn sq(r, c);
+            bool isFree   = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
+            bool isAttack = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
+            bool isSel    = selected.onBoard && sq == selected;
+            std::cout << squareBg(light, isSel, isFree, isAttack) << "    " << Color::Reset;
+        }
+        std::cout << "\n";
+        lines++;
+
+        // Middle row with piece centered
         std::cout << " " << Color::Bold << (8 - r) << Color::Reset << " ";
         for (int c = 0; c < 8; c++) {
             bool light = (r + c) % 2 == 0;
             posn sq(r, c);
-            bool isFree = std::find(highlightFree.begin(), highlightFree.end(), sq) != highlightFree.end();
+            bool isFree   = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
             bool isAttack = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
-            bool isSel = selected.onBoard && sq == selected;
-
-            // Background
-            if (isSel)
-                std::cout << "\033[48;5;214m"; // orange for selected
-            else if (isAttack)
-                std::cout << "\033[48;5;167m"; // red-ish for captures
-            else if (isFree)
-                std::cout << "\033[48;5;114m"; // green for free moves
-            else
-                std::cout << (light ? Color::BgLight : Color::BgDark);
-
-            char piece = game.pieceAt(r, c);
-            // Piece color
-            if (piece != ' ' && std::isupper(static_cast<unsigned char>(piece)))
-                std::cout << Color::White;
-            else
-                std::cout << Color::Black;
-
-            std::cout << " " << pieceSymbol(piece) << " " << Color::Reset;
+            bool isSel    = selected.onBoard && sq == selected;
+            char piece    = game.pieceAt(r, c);
+            bool isWhiteP = piece != ' ' && std::isupper(static_cast<unsigned char>(piece));
+            std::cout << squareBg(light, isSel, isFree, isAttack)
+                      << (isWhiteP ? Color::White : Color::Black)
+                      << " " << pieceSymbol(piece) << "  "
+                      << Color::Reset;
         }
         std::cout << "\n";
+        lines++;
+
+        // Bottom half of each square
+        std::cout << "    ";
+        for (int c = 0; c < 8; c++) {
+            bool light = (r + c) % 2 == 0;
+            posn sq(r, c);
+            bool isFree   = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
+            bool isAttack = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
+            bool isSel    = selected.onBoard && sq == selected;
+            std::cout << squareBg(light, isSel, isFree, isAttack) << "    " << Color::Reset;
+        }
+        std::cout << "\n";
+        lines++;
     }
-    std::cout << "   ";
+
+    // File labels
+    std::cout << "    ";
     for (int c = 0; c < 8; c++)
-        std::cout << Color::Bold << " " << static_cast<char>('a' + c) << " " << Color::Reset;
+        std::cout << Color::Bold << "  " << static_cast<char>('a' + c) << " " << Color::Reset;
     std::cout << "\n\n";
+    lines += 2;
+
+    boardLines = lines;
 }
 
 static void showHelp() {
@@ -99,7 +133,9 @@ int main() {
     std::vector<posn> showFree, showAttack;
     posn showSelected(-1, -1);
 
-    std::cout << Color::Bold << Color::Cyan << "Chess" << Color::Reset << "\n";
+    // Clear screen and move to top
+    std::cout << "\033[2J\033[H";
+    std::cout << Color::Bold << Color::Cyan << "  Chess\n" << Color::Reset;
     showHelp();
 
     while (game.result() == GameResult::InProgress) {
