@@ -3,6 +3,10 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <clocale>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "chess.h"
 #include "posn.h"
 
@@ -21,9 +25,16 @@ namespace Color {
     const char* Black   = "\033[30m";
 }
 
-static char pieceChar(char p) {
-    if (p == ' ') return ' ';
-    return std::toupper(static_cast<unsigned char>(p));
+static const char* pieceSymbol(char p) {
+    switch (p) {
+        case 'K': return "\u2654"; case 'Q': return "\u2655";
+        case 'R': return "\u2656"; case 'B': return "\u2657";
+        case 'N': return "\u2658"; case 'P': return "\u2659";
+        case 'k': return "\u265A"; case 'q': return "\u265B";
+        case 'r': return "\u265C"; case 'b': return "\u265D";
+        case 'n': return "\u265E"; case 'p': return "\u265F";
+        default:  return " ";
+    }
 }
 
 static void printBoard(const Board& game,
@@ -57,7 +68,7 @@ static void printBoard(const Board& game,
             else
                 std::cout << Color::Black;
 
-            std::cout << " " << pieceChar(piece) << " " << Color::Reset;
+            std::cout << " " << pieceSymbol(piece) << " " << Color::Reset;
         }
         std::cout << "\n";
     }
@@ -79,6 +90,11 @@ static void showHelp() {
 }
 
 int main() {
+    // Enable UTF-8 output
+    std::setlocale(LC_ALL, "en_US.UTF-8");
+#ifdef _WIN32
+    SetConsoleOutputCP(65001);
+#endif
     Board game;
     std::vector<posn> showFree, showAttack;
     posn showSelected(-1, -1);
