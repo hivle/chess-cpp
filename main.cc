@@ -40,14 +40,11 @@ static const char* pieceSymbol(char p) {
 // Move cursor to top-left of board area and redraw in place
 static int boardLines = 0; // track how many lines the board takes
 
-// W = chars per cell. Each cell = W chars wide x 2 lines tall.
-static const int W = 4;
-
-static void printCell(bool light, bool sel, bool isFree, bool isAttack) {
-    if      (sel)      std::cout << "\033[48;5;214m";
-    else if (isAttack) std::cout << "\033[48;5;167m";
-    else if (isFree)   std::cout << "\033[48;5;114m";
-    else               std::cout << (light ? "\033[48;5;223m" : "\033[48;5;137m");
+static void setBg(bool light, bool sel, bool isFree, bool isAtk) {
+    if      (sel)    std::cout << "\033[48;5;214m";
+    else if (isAtk)  std::cout << "\033[48;5;167m";
+    else if (isFree) std::cout << "\033[48;5;114m";
+    else             std::cout << (light ? "\033[48;5;223m" : "\033[48;5;137m");
 }
 
 static void printBoard(const Board& game,
@@ -57,69 +54,45 @@ static void printBoard(const Board& game,
     if (boardLines > 0)
         std::cout << "\033[" << boardLines << "A\033[J";
 
-    // Top border
-    std::cout << "   \033[2m+";
-    for (int c = 0; c < 8; c++) std::cout << std::string(W, '-') << "+";
-    std::cout << "\033[0m\n";
-
-    int lines = 1;
+    int lines = 0;
     for (int r = 0; r < 8; r++) {
-        // Line 1: piece row
-        std::cout << " " << Color::Bold << (8 - r) << Color::Reset << " \033[2m|\033[0m";
+        // -- Piece row --
+        std::cout << " " << Color::Bold << (8 - r) << Color::Reset << " ";
         for (int c = 0; c < 8; c++) {
-            bool light    = (r + c) % 2 == 0;
+            bool light = (r + c) % 2 == 0;
             posn sq(r, c);
-            bool isFree   = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
-            bool isAttack = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
-            bool isSel    = selected.onBoard && sq == selected;
-            char piece    = game.pieceAt(r, c);
-            bool isWhiteP = piece != ' ' && std::isupper(static_cast<unsigned char>(piece));
-            printCell(light, isSel, isFree, isAttack);
-            std::cout << (isWhiteP ? Color::White : Color::Black);
-            // Center piece in W chars: 1 padding left, piece, rest padding
-            std::cout << " " << pieceSymbol(piece) << std::string(W - 2, ' ');
-            std::cout << "\033[0m\033[2m|\033[0m";
+            bool isFree = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
+            bool isAtk  = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
+            bool isSel  = selected.onBoard && sq == selected;
+            char piece  = game.pieceAt(r, c);
+            setBg(light, isSel, isFree, isAtk);
+            if (piece != ' ' && std::isupper((unsigned char)piece)) std::cout << Color::White;
+            else                                                     std::cout << Color::Black;
+            std::cout << " " << pieceSymbol(piece) << " ";
+            std::cout << "\033[0m";
         }
         std::cout << "\n";
         lines++;
 
-        // Line 2: blank row (same background, no piece)
-        std::cout << "   \033[2m|\033[0m";
+        // -- Blank row (adds height to make cells more square) --
+        std::cout << "   ";
         for (int c = 0; c < 8; c++) {
-            bool light    = (r + c) % 2 == 0;
+            bool light = (r + c) % 2 == 0;
             posn sq(r, c);
-            bool isFree   = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
-            bool isAttack = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
-            bool isSel    = selected.onBoard && sq == selected;
-            printCell(light, isSel, isFree, isAttack);
-            std::cout << std::string(W, ' ') << "\033[0m\033[2m|\033[0m";
+            bool isFree = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
+            bool isAtk  = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
+            bool isSel  = selected.onBoard && sq == selected;
+            setBg(light, isSel, isFree, isAtk);
+            std::cout << "   \033[0m";
         }
         std::cout << "\n";
         lines++;
-
-        // Rank separator (dim, thin)
-        if (r < 7) {
-            std::cout << "   \033[2m+";
-            for (int c = 0; c < 8; c++) std::cout << std::string(W, '-') << "+";
-            std::cout << "\033[0m\n";
-            lines++;
-        }
     }
 
-    // Bottom border
-    std::cout << "   \033[2m+";
-    for (int c = 0; c < 8; c++) std::cout << std::string(W, '-') << "+";
-    std::cout << "\033[0m\n";
-    lines++;
-
-    // File labels centered under each cell
-    std::cout << "    ";
-    for (int c = 0; c < 8; c++) {
-        int pad = (W - 1) / 2;
-        std::cout << std::string(pad, ' ') << Color::Bold
-                  << static_cast<char>('a' + c)
-                  << Color::Reset << std::string(W - pad, ' ');
-    }
+    // File labels
+    std::cout << "   ";
+    for (int c = 0; c < 8; c++)
+        std::cout << " " << Color::Bold << static_cast<char>('a' + c) << Color::Reset << "  ";
     std::cout << "\n\n";
     lines += 2;
 
