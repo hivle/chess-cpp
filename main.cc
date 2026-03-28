@@ -57,6 +57,7 @@ static void printBoard(const Board& game,
 
     int lines = 0;
     for (int r = 0; r < 8; r++) {
+        // Piece row
         std::cout << " " << Color::Bold << (8 - r) << Color::Reset << " ";
         for (int c = 0; c < 8; c++) {
             bool light    = (r + c) % 2 == 0;
@@ -73,6 +74,21 @@ static void printBoard(const Board& game,
         }
         std::cout << "\n";
         lines++;
+
+        // Extra blank line every 2 ranks to get ~1.5 lines/rank (closer to square)
+        if (r % 2 == 1) {
+            std::cout << "   ";
+            for (int c = 0; c < 8; c++) {
+                bool light    = (r + c) % 2 == 0;
+                posn sq(r, c);
+                bool isFree   = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
+                bool isAttack = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
+                bool isSel    = selected.onBoard && sq == selected;
+                std::cout << squareBg(light, isSel, isFree, isAttack) << "    " << Color::Reset;
+            }
+            std::cout << "\n";
+            lines++;
+        }
     }
 
     // File labels
