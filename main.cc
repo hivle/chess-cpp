@@ -69,7 +69,7 @@ static void printBoard(const Board& game,
             bool isWhiteP = piece != ' ' && std::isupper(static_cast<unsigned char>(piece));
             std::cout << squareBg(light, isSel, isFree, isAttack)
                       << (isWhiteP ? Color::White : Color::Black)
-                      << " " << pieceSymbol(piece) << "  "
+                      << "  " << pieceSymbol(piece) << "  "
                       << Color::Reset;
         }
         std::cout << "\n";
@@ -95,17 +95,17 @@ static void printBoard(const Board& game,
                                           squareBg(nextLight, nSel, nFree, nAttack) == "\033[48;5;167m" ? "167" :
                                           squareBg(nextLight, nSel, nFree, nAttack) == "\033[48;5;114m" ? "114" :
                                           nextLight ? "223" : "137") << "m"
-                      << "\u2584\u2584\u2584\u2584"                 // ▄▄▄▄ lower half block
+                      << "\u2584\u2584\u2584\u2584\u2584"           // ▄▄▄▄▄ lower half block
                       << Color::Reset;
         }
         std::cout << "\n";
         lines++;
     }
 
-    // File labels
-    std::cout << "    ";
+    // File labels — centered in 5-char cell
+    std::cout << "   ";
     for (int c = 0; c < 8; c++)
-        std::cout << Color::Bold << "  " << static_cast<char>('a' + c) << " " << Color::Reset;
+        std::cout << Color::Bold << "  " << static_cast<char>('a' + c) << "  " << Color::Reset;
     std::cout << "\n\n";
     lines += 2;
 
