@@ -75,20 +75,31 @@ static void printBoard(const Board& game,
         std::cout << "\n";
         lines++;
 
-        // Extra blank line every 2 ranks to get ~1.5 lines/rank (closer to square)
-        if (r % 2 == 1) {
-            std::cout << "   ";
-            for (int c = 0; c < 8; c++) {
-                bool light    = (r + c) % 2 == 0;
-                posn sq(r, c);
-                bool isFree   = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
-                bool isAttack = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
-                bool isSel    = selected.onBoard && sq == selected;
-                std::cout << squareBg(light, isSel, isFree, isAttack) << "    " << Color::Reset;
-            }
-            std::cout << "\n";
-            lines++;
+        // Half-height padding row using block characters (▄ = lower half block)
+        // Top half uses current row's color, bottom half uses next row's color
+        std::cout << "   ";
+        for (int c = 0; c < 8; c++) {
+            bool light     = (r + c) % 2 == 0;
+            bool nextLight = (r + 1 + c) % 2 == 0;
+            posn sq(r, c);
+            posn nextSq(r + 1, c);
+            bool isFree    = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
+            bool isAttack  = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
+            bool isSel     = selected.onBoard && sq == selected;
+            bool nFree     = r < 7 && std::find(highlightFree.begin(),   highlightFree.end(),   nextSq) != highlightFree.end();
+            bool nAttack   = r < 7 && std::find(highlightAttack.begin(), highlightAttack.end(), nextSq) != highlightAttack.end();
+            bool nSel      = r < 7 && selected.onBoard && nextSq == selected;
+            // ▄ has foreground = bottom half color, background = top half color
+            std::cout << squareBg(light, isSel, isFree, isAttack)  // top half bg
+                      << "\033[38;5;" << (squareBg(nextLight, nSel, nFree, nAttack) == "\033[48;5;214m" ? "214" :
+                                          squareBg(nextLight, nSel, nFree, nAttack) == "\033[48;5;167m" ? "167" :
+                                          squareBg(nextLight, nSel, nFree, nAttack) == "\033[48;5;114m" ? "114" :
+                                          nextLight ? "223" : "137") << "m"
+                      << "\u2584\u2584\u2584\u2584"                 // ▄▄▄▄ lower half block
+                      << Color::Reset;
         }
+        std::cout << "\n";
+        lines++;
     }
 
     // File labels
