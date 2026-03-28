@@ -56,7 +56,6 @@ static void printBoard(const Board& game,
 
     int lines = 0;
     for (int r = 0; r < 8; r++) {
-        // -- Piece row --
         std::cout << " " << Color::Bold << (8 - r) << Color::Reset << " ";
         for (int c = 0; c < 8; c++) {
             bool light = (r + c) % 2 == 0;
@@ -68,31 +67,16 @@ static void printBoard(const Board& game,
             setBg(light, isSel, isFree, isAtk);
             if (piece != ' ' && std::isupper((unsigned char)piece)) std::cout << Color::White;
             else                                                     std::cout << Color::Black;
-            std::cout << " " << pieceSymbol(piece) << " ";
-            std::cout << "\033[0m";
-        }
-        std::cout << "\n";
-        lines++;
-
-        // -- Blank row (adds height to make cells more square) --
-        std::cout << "   ";
-        for (int c = 0; c < 8; c++) {
-            bool light = (r + c) % 2 == 0;
-            posn sq(r, c);
-            bool isFree = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
-            bool isAtk  = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
-            bool isSel  = selected.onBoard && sq == selected;
-            setBg(light, isSel, isFree, isAtk);
-            std::cout << "   \033[0m";
+            std::cout << " " << pieceSymbol(piece) << " \033[0m";
         }
         std::cout << "\n";
         lines++;
     }
 
-    // File labels
+    // File labels — 3 chars per cell, letter at center position
     std::cout << "   ";
     for (int c = 0; c < 8; c++)
-        std::cout << " " << Color::Bold << static_cast<char>('a' + c) << Color::Reset << "  ";
+        std::cout << " " << Color::Bold << static_cast<char>('a' + c) << Color::Reset << " ";
     std::cout << "\n\n";
     lines += 2;
 
