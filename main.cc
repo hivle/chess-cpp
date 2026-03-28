@@ -67,7 +67,7 @@ static void printBoard(const Board& game,
             setBg(light, isSel, isFree, isAtk);
             if (piece != ' ' && std::isupper((unsigned char)piece)) std::cout << Color::White;
             else                                                     std::cout << Color::Black;
-            std::cout << "  " << pieceSymbol(piece) << " \033[0m";
+            std::cout << " " << pieceSymbol(piece) << " \033[0m";
         }
         std::cout << "\n";
         lines++;
