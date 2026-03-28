@@ -37,9 +37,6 @@ static const char* pieceSymbol(char p) {
     }
 }
 
-// Move cursor to top-left of board area and redraw in place
-static int boardLines = 0; // track how many lines the board takes
-
 static void setBg(bool light, bool sel, bool isFree, bool isAtk) {
     if      (sel)    std::cout << "\033[48;5;214m";
     else if (isAtk)  std::cout << "\033[48;5;167m";
@@ -51,10 +48,9 @@ static void printBoard(const Board& game,
                         const std::vector<posn>& highlightFree = {},
                         const std::vector<posn>& highlightAttack = {},
                         posn selected = posn(-1, -1)) {
-    if (boardLines > 0)
-        std::cout << "\033[" << boardLines << "A\033[J";
+    // Go to top of screen and clear everything below — avoids cursor-up miscounting
+    std::cout << "\033[H\033[J";
 
-    int lines = 0;
     for (int r = 0; r < 8; r++) {
         std::cout << " " << Color::Bold << (8 - r) << Color::Reset << " ";
         for (int c = 0; c < 8; c++) {
@@ -70,7 +66,6 @@ static void printBoard(const Board& game,
             std::cout << " " << pieceSymbol(piece) << " \033[0m";
         }
         std::cout << "\n";
-        lines++;
     }
 
     // File labels — 3 chars per cell, letter at center position
@@ -78,9 +73,6 @@ static void printBoard(const Board& game,
     for (int c = 0; c < 8; c++)
         std::cout << " " << Color::Bold << static_cast<char>('a' + c) << Color::Reset << " ";
     std::cout << "\n\n";
-    lines += 2;
-
-    boardLines = lines;
 }
 
 static void showHelp() {
@@ -104,8 +96,6 @@ int main() {
     std::vector<posn> showFree, showAttack;
     posn showSelected(-1, -1);
 
-    // Clear screen and move to top
-    std::cout << "\033[2J\033[H";
     std::cout << Color::Bold << Color::Cyan << "  Chess\n" << Color::Reset;
     showHelp();
 
