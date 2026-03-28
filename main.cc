@@ -57,9 +57,6 @@ static void printBoard(const Board& game,
 
     int lines = 0;
     for (int r = 0; r < 8; r++) {
-        // Each rank = 2 terminal lines for a roughly square cell (4 chars wide x 2 lines tall)
-
-        // Line 1: rank label + piece row
         std::cout << " " << Color::Bold << (8 - r) << Color::Reset << " ";
         for (int c = 0; c < 8; c++) {
             bool light    = (r + c) % 2 == 0;
@@ -71,30 +68,17 @@ static void printBoard(const Board& game,
             bool isWhiteP = piece != ' ' && std::isupper(static_cast<unsigned char>(piece));
             std::cout << squareBg(light, isSel, isFree, isAttack)
                       << (isWhiteP ? Color::White : Color::Black)
-                      << " " << pieceSymbol(piece) << "  "
+                      << "  " << pieceSymbol(piece) << "  "
                       << Color::Reset;
-        }
-        std::cout << "\n";
-        lines++;
-
-        // Line 2: blank row (gives square height)
-        std::cout << "   ";
-        for (int c = 0; c < 8; c++) {
-            bool light    = (r + c) % 2 == 0;
-            posn sq(r, c);
-            bool isFree   = std::find(highlightFree.begin(),   highlightFree.end(),   sq) != highlightFree.end();
-            bool isAttack = std::find(highlightAttack.begin(), highlightAttack.end(), sq) != highlightAttack.end();
-            bool isSel    = selected.onBoard && sq == selected;
-            std::cout << squareBg(light, isSel, isFree, isAttack) << "    " << Color::Reset;
         }
         std::cout << "\n";
         lines++;
     }
 
     // File labels
-    std::cout << "    ";
+    std::cout << "   ";
     for (int c = 0; c < 8; c++)
-        std::cout << Color::Bold << "  " << static_cast<char>('a' + c) << " " << Color::Reset;
+        std::cout << Color::Bold << "   " << static_cast<char>('a' + c) << "  " << Color::Reset;
     std::cout << "\n\n";
     lines += 2;
 
