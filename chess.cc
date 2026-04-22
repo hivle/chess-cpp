@@ -187,22 +187,27 @@ void Board::kingHelper(posn loc, std::vector<posn>& free, std::vector<posn>& att
     if (!castling) return;
 
     if (state.whiteTurn) {
-        if (state.whiteCastle && isEmpty("f1") && isEmpty("g1")) {
-            if (!isDanger(true, posn("f1")) && !isDanger(true, posn("g1")))
-                free.push_back(posn("g1"));
-        }
-        if (state.whiteCastleLong && isEmpty("d1") && isEmpty("c1") && isEmpty("b1")) {
-            if (!isDanger(true, posn("c1")) && !isDanger(true, posn("d1")))
-                free.push_back(posn("c1"));
+        // King cannot castle out of check
+        if (!inCheck(true)) {
+            if (state.whiteCastle && isEmpty("f1") && isEmpty("g1")) {
+                if (!isDanger(true, posn("f1")) && !isDanger(true, posn("g1")))
+                    free.push_back(posn("g1"));
+            }
+            if (state.whiteCastleLong && isEmpty("d1") && isEmpty("c1") && isEmpty("b1")) {
+                if (!isDanger(true, posn("c1")) && !isDanger(true, posn("d1")))
+                    free.push_back(posn("c1"));
+            }
         }
     } else {
-        if (state.blackCastle && isEmpty("f8") && isEmpty("g8")) {
-            if (!isDanger(false, posn("f8")) && !isDanger(false, posn("g8")))
-                free.push_back(posn("g8"));
-        }
-        if (state.blackCastleLong && isEmpty("d8") && isEmpty("c8") && isEmpty("b8")) {
-            if (!isDanger(false, posn("c8")) && !isDanger(false, posn("d8")))
-                free.push_back(posn("c8"));
+        if (!inCheck(false)) {
+            if (state.blackCastle && isEmpty("f8") && isEmpty("g8")) {
+                if (!isDanger(false, posn("f8")) && !isDanger(false, posn("g8")))
+                    free.push_back(posn("g8"));
+            }
+            if (state.blackCastleLong && isEmpty("d8") && isEmpty("c8") && isEmpty("b8")) {
+                if (!isDanger(false, posn("c8")) && !isDanger(false, posn("d8")))
+                    free.push_back(posn("c8"));
+            }
         }
     }
 }
@@ -325,8 +330,8 @@ void Board::movePiece(posn ini, posn tar, char promotion) {
 
     // Fifty-move rule
     if (state.repeatedMoves >= 100) gameResult = GameResult::Draw;
-    // Threefold repetition
-    if (std::count(history.begin(), history.end(), state) >= 3)
+    // Threefold repetition: current state + >= 2 in history = 3 total occurrences
+    if (std::count(history.begin(), history.end(), state) >= 2)
         gameResult = GameResult::Draw;
 }
 

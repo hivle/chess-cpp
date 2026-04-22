@@ -399,6 +399,7 @@ done:
     XFreePixmap(dpy, buffer);
     if (bigFont) XFreeFont(dpy, bigFont);
     if (smallFont && smallFont != bigFont) XFreeFont(dpy, smallFont);
+    if (labelFont && labelFont != smallFont && labelFont != bigFont) XFreeFont(dpy, labelFont);
     XFreeGC(dpy, gc);
     XDestroyWindow(dpy, win);
     XCloseDisplay(dpy);
