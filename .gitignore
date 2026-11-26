@@ -4,3 +4,4 @@ chess-gui
 main
 .vscode/
 .DS_Store
+*.exe

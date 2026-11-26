@@ -33,8 +33,11 @@ make clean  # remove build artifacts
 
 ### CLI
 ```bash
-./chess
+./chess        # Linux / macOS
+.\chess.exe    # Windows
 ```
+
+On Windows, `make cli` builds a standalone `chess.exe` (statically linked, so it also runs by double-clicking). If `make` isn't found, use `mingw32-make cli`.
 
 | Input | Action |
 |-------|--------|
