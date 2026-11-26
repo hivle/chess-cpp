@@ -5,40 +5,29 @@ CORE_SRC = chess.cc posn.cc
 CORE_OBJ = $(CORE_SRC:.cc=.o)
 HEADERS = chess.h posn.h
 
-# On Windows, name the programs *.exe and link the C++ runtime statically
-# so chess.exe runs on its own (double-click works, no missing-DLL errors).
-ifeq ($(OS),Windows_NT)
-    EXE = .exe
-    LDFLAGS = -static
-    RM = del /Q
-else
-    EXE =
-    LDFLAGS =
-    RM = rm -f
-endif
+X11_LIBS = -lX11
 
-CLI = chess$(EXE)
-GUI = chess-gui$(EXE)
+# Default: build both CLI and GUI
+all: chess chess-gui
 
-# Default: build both CLI and GUI (the GUI needs X11, so Linux only)
-all: $(CLI) $(GUI)
+# CLI version
+chess: $(CORE_OBJ) main.o
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+# GUI version (X11)
+chess-gui: $(CORE_OBJ) gui.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(X11_LIBS)
 
 # Build only CLI
-cli: $(CLI)
+cli: chess
 
 # Build only GUI
-gui: $(GUI)
-
-$(CLI): $(CORE_OBJ) main.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
-
-$(GUI): $(CORE_OBJ) gui.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lX11
+gui: chess-gui
 
 %.o: %.cc $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	$(RM) chess chess-gui chess.exe chess-gui.exe *.o
+	rm -f chess chess-gui *.o
 
 .PHONY: all cli gui clean
