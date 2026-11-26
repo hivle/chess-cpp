@@ -1,6 +1,6 @@
 # chess-cpp
 
-A chess game written in C++ with a terminal CLI and an X11 graphical interface.
+A chess game written in C++ with a terminal CLI and a graphical interface (a native window on Windows, X11 on Linux).
 
 ## Dependencies
 
@@ -49,13 +49,13 @@ Legal moves are highlighted on the board — green for free squares, red for cap
 
 ### GUI
 ```bash
-./chess-gui
+make gui
+.\chess-gui     # Windows: opens a native window (no extra libraries needed)
+./chess-gui     # Linux: X11 window
 ```
 
-If you get `cannot open display`, run:
-```bash
-export DISPLAY=:0 && ./chess-gui
-```
+On Linux, if you get `cannot open display`, run `export DISPLAY=:0 && ./chess-gui`.
+The Windows window can be resized; the board scales to fit.
 
 | Action | Control |
 |--------|---------|
