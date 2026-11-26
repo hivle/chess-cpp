@@ -233,20 +233,16 @@ void Board::legalMoves(posn loc, std::vector<posn>& free, std::vector<posn>& att
     std::vector<posn> tmpFree, tmpAttack;
     possibleMoves(loc, tmpFree, tmpAttack, true);
 
-    // We need a mutable copy to test moves
+    // Try each move on a copy; reject it if it leaves the mover's own king in check.
+    // (movePiece does not flip the turn, so state.whiteTurn is still the mover.)
+    const bool mover = state.whiteTurn;
     Board test = *this;
-
-    for (posn& target : tmpFree) {
-        test.state = state;
-        test.movePiece(loc, target);
-        if (test.inCheck(!test.state.whiteTurn)) target.onBoard = false;
-        test.state = state;
-    }
-    for (posn& target : tmpAttack) {
-        test.state = state;
-        test.movePiece(loc, target);
-        if (test.inCheck(!test.state.whiteTurn)) target.onBoard = false;
-        test.state = state;
+    for (auto* list : {&tmpFree, &tmpAttack}) {
+        for (posn& target : *list) {
+            test.state = state;
+            test.movePiece(loc, target);
+            if (test.inCheck(mover)) target.onBoard = false;
+        }
     }
 
     for (const posn& m : tmpFree)
@@ -322,29 +318,36 @@ void Board::movePiece(posn ini, posn tar, char promotion) {
         state.blackCastle = false;
         state.blackCastleLong = false;
     }
-    // Rook moves invalidate castling
-    else if (start == "h1") state.whiteCastle = false;
-    else if (start == "a1") state.whiteCastleLong = false;
-    else if (start == "h8") state.blackCastle = false;
-    else if (start == "a8") state.blackCastleLong = false;
-
-    // Fifty-move rule
-    if (state.repeatedMoves >= 100) gameResult = GameResult::Draw;
-    // Threefold repetition: current state + >= 2 in history = 3 total occurrences
-    if (std::count(history.begin(), history.end(), state) >= 2)
-        gameResult = GameResult::Draw;
+    // A rook leaving its home square, or being captured on it, ends castling on that side
+    for (const std::string& sq : {start, end}) {
+        if      (sq == "h1") state.whiteCastle = false;
+        else if (sq == "a1") state.whiteCastleLong = false;
+        else if (sq == "h8") state.blackCastle = false;
+        else if (sq == "a8") state.blackCastleLong = false;
+    }
 }
 
 bool Board::move(posn ini, posn tar, char promotion) {
+    promotion = static_cast<char>(std::toupper(static_cast<unsigned char>(promotion)));
+    if (promotion != 'Q' && promotion != 'R' && promotion != 'B' && promotion != 'N')
+        return false;
+
     std::vector<posn> free, attack;
     legalMoves(ini, free, attack);
-    if (std::find(free.begin(), free.end(), tar) != free.end() ||
-        std::find(attack.begin(), attack.end(), tar) != attack.end()) {
-        movePiece(ini, tar, promotion);
-        state.whiteTurn = !state.whiteTurn;
-        return true;
-    }
-    return false;
+    if (std::find(free.begin(), free.end(), tar) == free.end() &&
+        std::find(attack.begin(), attack.end(), tar) == attack.end())
+        return false;
+
+    movePiece(ini, tar, promotion);
+    state.whiteTurn = !state.whiteTurn;
+
+    // Draw checks run after the turn flips, so the side to move matches the history entries.
+    // Fifty-move rule: 100 half-moves without a pawn move or capture
+    if (state.repeatedMoves >= 100) gameResult = GameResult::Draw;
+    // Threefold repetition: 2 earlier occurrences in history + the current one
+    if (std::count(history.begin(), history.end(), state) >= 2)
+        gameResult = GameResult::Draw;
+    return true;
 }
 
 void Board::updateBoard() {
