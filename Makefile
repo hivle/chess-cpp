@@ -5,7 +5,14 @@ CORE_SRC = chess.cc posn.cc
 CORE_OBJ = $(CORE_SRC:.cc=.o)
 HEADERS = chess.h posn.h
 
-X11_LIBS = -lX11
+# GUI: native Win32 window on Windows, X11 window elsewhere
+ifeq ($(OS),Windows_NT)
+    GUI_SRC = gui_win.cc
+    GUI_LIBS = -lgdi32 -mwindows
+else
+    GUI_SRC = gui.cc
+    GUI_LIBS = -lX11
+endif
 
 # Default: build both CLI and GUI
 all: chess chess-gui
@@ -14,9 +21,9 @@ all: chess chess-gui
 chess: $(CORE_OBJ) main.o
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# GUI version (X11)
-chess-gui: $(CORE_OBJ) gui.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(X11_LIBS)
+# GUI version (Win32 on Windows, X11 on Linux)
+chess-gui: $(CORE_OBJ) $(GUI_SRC:.cc=.o)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(GUI_LIBS)
 
 # Build only CLI
 cli: chess
