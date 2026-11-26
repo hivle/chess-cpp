@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iterator>
 #include <clocale>
+#include <cctype>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -75,15 +76,25 @@ static void printBoard(const Board& game,
     std::cout << "\n\n";
 }
 
-static void showHelp() {
-    std::cout << Color::Cyan
-              << "Commands:\n"
-              << "  e2e4  - move piece from e2 to e4\n"
-              << "  e2    - show legal moves for piece at e2\n"
-              << "  back  - undo last move\n"
-              << "  help  - show this help\n"
-              << "  exit  - quit the game\n"
-              << Color::Reset << "\n";
+static std::string helpText() {
+    return std::string(Color::Cyan) +
+        "  Commands:\n"
+        "    e2e4   move piece from e2 to e4 (add q/r/b/n to promote, e.g. e7e8n)\n"
+        "    e2     show legal moves for the piece on e2\n"
+        "    back   undo last move (also: undo, z)\n"
+        "    help   show this help (also: h, ?)\n"
+        "    exit   quit (also: quit, q)\n" + Color::Reset;
+}
+
+static std::string trim(const std::string& s) {
+    size_t b = s.find_first_not_of(" \t\r\n");
+    if (b == std::string::npos) return "";
+    size_t e = s.find_last_not_of(" \t\r\n");
+    return s.substr(b, e - b + 1);
+}
+
+static std::string colored(const char* color, const std::string& text) {
+    return std::string(color) + "  " + text + Color::Reset;
 }
 
 int main() {
@@ -95,9 +106,8 @@ int main() {
     Board game;
     std::vector<posn> showFree, showAttack;
     posn showSelected(-1, -1);
-
-    std::cout << Color::Bold << Color::Cyan << "  Chess\n" << Color::Reset;
-    showHelp();
+    // Printed under the board on the next redraw (the redraw clears the screen)
+    std::string message = helpText();
 
     while (game.result() == GameResult::InProgress) {
         printBoard(game, showFree, showAttack, showSelected);
@@ -105,23 +115,23 @@ int main() {
         showAttack.clear();
         showSelected = posn(-1, -1);
 
+        if (!message.empty()) std::cout << message << "\n";
+        message.clear();
+
         if (game.inCheck(game.getTurn()))
             std::cout << Color::Red << Color::Bold << "  Check!" << Color::Reset << "\n";
 
-        std::cout << (game.getTurn() ? "  White" : "  Black") << " to move: ";
+        std::cout << (game.getTurn() ? "  White" : "  Black") << " to move: " << std::flush;
         std::string input;
         if (!std::getline(std::cin, input)) break;
-
-        // Trim whitespace
-        while (!input.empty() && input.front() == ' ') input.erase(input.begin());
-        while (!input.empty() && input.back() == ' ') input.pop_back();
+        input = trim(input);
+        for (char& ch : input) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
 
         if (input.empty()) continue;
         if (input == "exit" || input == "quit" || input == "q") break;
-        if (input == "help" || input == "h" || input == "?") { showHelp(); continue; }
+        if (input == "help" || input == "h" || input == "?") { message = helpText(); continue; }
         if (input == "back" || input == "undo" || input == "z") {
-            if (!game.revert())
-                std::cout << Color::Yellow << "  Nothing to undo." << Color::Reset << "\n";
+            if (!game.revert()) message = colored(Color::Yellow, "Nothing to undo.");
             continue;
         }
 
@@ -131,43 +141,43 @@ int main() {
                 std::vector<posn> free, attack;
                 game.legalMoves(sq, free, attack);
                 if (free.empty() && attack.empty()) {
-                    std::cout << Color::Yellow << "  No legal moves for " << input << Color::Reset << "\n";
+                    message = colored(Color::Yellow, "No legal moves for " + input);
                 } else {
                     showFree = free;
                     showAttack = attack;
                     showSelected = sq;
                 }
             } catch (...) {
-                std::cout << Color::Red << "  Invalid square: " << input << Color::Reset << "\n";
+                message = colored(Color::Red, "Invalid square: " + input);
             }
             continue;
         }
 
         if (input.length() == 4 || input.length() == 5) {
             try {
-                std::string from = input.substr(0, 2);
-                std::string to = input.substr(2, 2);
-                char promo = input.length() == 5 ? input[4] : 'Q';
-                if (!game.move(posn(from), posn(to), promo)) {
-                    std::cout << Color::Red << "  Illegal move: " << input << Color::Reset << "\n";
-                    // Show legal moves as a hint
+                posn from(input.substr(0, 2));
+                posn to(input.substr(2, 2));
+                char promo = input.length() == 5 ? input[4] : 'q';
+                if (game.move(from, to, promo)) {
+                    game.updateBoard();
+                } else {
+                    message = colored(Color::Red, "Illegal move: " + input);
+                    // Show the piece's legal moves as a hint
                     std::vector<posn> free, attack;
-                    game.legalMoves(posn(from), free, attack);
+                    game.legalMoves(from, free, attack);
                     if (!free.empty() || !attack.empty()) {
                         showFree = free;
                         showAttack = attack;
-                        showSelected = posn(from);
+                        showSelected = from;
                     }
-                } else {
-                    game.updateBoard();
                 }
             } catch (...) {
-                std::cout << Color::Red << "  Invalid input: " << input << Color::Reset << "\n";
+                message = colored(Color::Red, "Invalid input: " + input);
             }
             continue;
         }
 
-        std::cout << Color::Yellow << "  Unknown command. Type 'help' for usage." << Color::Reset << "\n";
+        message = colored(Color::Yellow, "Unknown command. Type 'help' for usage.");
     }
 
     printBoard(game);
